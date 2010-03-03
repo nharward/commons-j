@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<r:contacts xmlns:r="http://us.harward.xmlns/rolodex" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://us.harward.xmlns/rolodex ../schema/rolodex.xsd ">
+    <r:person>
+        <r:last-name>Doe</r:last-name>
+        <r:first-name>John</r:first-name>
+        <r:address type="home">
+            <r:line>12345 Main St.</r:line>
+            <r:city>Nowhere</r:city>
+            <r:state>Nohow</r:state>
+            <r:zipcode>12345</r:zipcode>
+        </r:address>
+        <r:address type="business">
+            <r:line>54321 Main St.</r:line>
+            <r:city>Nowhere</r:city>
+            <r:state>Nohow</r:state>
+            <r:zipcode>12345</r:zipcode>
+        </r:address>
+    </r:person>
+    <r:person>
+        <r:last-name>Doe</r:last-name>
+        <r:first-name>Jane</r:first-name>
+        <r:address type="home">
+            <r:line>12345 Main St.</r:line>
+            <r:city>Nowhere</r:city>
+            <r:state>Nohow</r:state>
+            <r:zipcode>12345</r:zipcode>
+        </r:address>
+        <r:address type="business">
+            <r:line>1234 Nowhere Street</r:line>
+            <r:city>Some City</r:city>
+            <r:state>Some State</r:state>
+            <r:zipcode>12345</r:zipcode>
+        </r:address>
+    </r:person>
+</r:contacts>

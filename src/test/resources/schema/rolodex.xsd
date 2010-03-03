@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://us.harward.xmlns/rolodex" xmlns:tns="http://us.harward.xmlns/rolodex" elementFormDefault="qualified">
+    <complexType name="person-type">
+        <sequence>
+            <element name="last-name" type="string" maxOccurs="1" minOccurs="1" />
+            <element name="first-name" type="string" maxOccurs="1" minOccurs="0" />
+            <element name="address" type="tns:address-type" maxOccurs="unbounded" minOccurs="0"></element>
+        </sequence>
+    </complexType>
+    <complexType name="address-type">
+        <sequence>
+            <element name="line" type="string" maxOccurs="unbounded" minOccurs="0" />
+            <element name="city" type="string" maxOccurs="1" minOccurs="0" />
+            <element name="state" type="string" maxOccurs="1" minOccurs="0" />
+            <element name="zipcode" type="positiveInteger" maxOccurs="1" minOccurs="0" />
+        </sequence>
+        <attribute name="type" use="required">
+            <simpleType>
+                <restriction base="string">
+                    <enumeration value="home" />
+                    <enumeration value="business" />
+                    <enumeration value="mailing" />
+                </restriction>
+            </simpleType>
+        </attribute>
+    </complexType>
+    <complexType name="contact-list">
+        <choice>
+            <element name="person" type="tns:person-type" maxOccurs="unbounded" minOccurs="0"></element>
+        </choice>
+    </complexType>
+    <element name="contacts" type="tns:contact-list"></element>
+</schema>

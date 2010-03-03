@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Copyright 2010 by Nathaniel Harward.
+    Copyright 2010 Nathaniel Harward.
 
     This file is part of ndh-commons.
 
@@ -11,27 +11,23 @@
 
     ndh-commons is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with ndh-commons, see the file LICENSE.txt.    If not, see
+    along with ndh-commons, see the file LICENSE.txt.  If not, see
     <http://www.gnu.org/licenses/>.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>us.harward</groupId>
-    <artifactId>ndh-commond</artifactId>
+    <artifactId>ndh-commons</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-
     <name>NDH Commons: Utilities for Java 1.6</name>
-    <description>Some handy code I've found useful that I haven't found in other projects. I'd be happy to contribute the code here to other projects once the code here matures, if it can find a happy home somewhere else.</description>
+    <description>Some handy code I've found useful that I haven't found in other projects. I'd be happy to contribute the code here to other projects once the code here matures if it can find a happy home somewhere else.</description>
     <url>http://code.google.com/p/ndh-commons/</url>
     <inceptionYear>2010</inceptionYear>
-
     <licenses>
         <license>
             <name>GPLv3</name>
@@ -40,18 +36,15 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
     <scm>
         <connection>scm:svn:http://ndh-commons.googlecode.com/svn/trunk</connection>
         <developerConnection>scm:svn:https://ndh-commons.googlecode.com/svn/trunk</developerConnection>
         <url>http://code.google.com/p/ndh-commons/source/browse/</url>
     </scm>
-
     <issueManagement>
         <system>Google Code</system>
         <url>http://code.google.com/p/ndh-commons/issues/list</url>
     </issueManagement>
-
     <developers>
         <developer>
             <id>nharward</id>
@@ -65,7 +58,15 @@
             <timezone>-8</timezone>
         </developer>
     </developers>
-
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.8.1</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <distributionManagement>
         <repository>
             <uniqueVersion>true</uniqueVersion>
@@ -87,7 +88,12 @@
             <url>scpexe://apollo.harward.us/var/www/html/maven2/sites/ndh-commons</url>
         </site>
     </distributionManagement>
-
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+    </dependencies>
     <reporting>
         <plugins>
             <plugin>
@@ -119,7 +125,6 @@
             </plugin>
         </plugins>
     </reporting>
-
     <build>
         <defaultGoal>integration-test</defaultGoal>
         <plugins>
@@ -131,7 +136,44 @@
                     <target>1.6</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jaxb2-maven-plugin</artifactId>
+                <version>1.3</version>
+                <executions>
+                    <execution>
+                        <id>rolodex</id>
+                        <goals>
+                            <goal>testXjc</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/generated-test-sources/jaxb</outputDirectory>
+                    <schemaDirectory>src/test/resources/schema</schemaDirectory>
+                    <schemaFiles>rolodex.xsd</schemaFiles>
+                    <packageName>us.harward.commons.xml.jaxbtest.rolodex</packageName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <id>add-generated-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-test-sources/jaxb</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
 </project>
