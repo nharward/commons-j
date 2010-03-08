@@ -27,21 +27,21 @@ import javax.xml.stream.events.StartElement;
 import us.harward.commons.xml.saxbp.annotations.SAXBPHandler;
 
 @SAXBPHandler
-public class StAXContactListHandler {
+public class StAXAddressHandler {
 
-    private final Collection<StartElement> contactLists = new LinkedList<StartElement>();
+    private final Collection<StartElement> addresses = new LinkedList<StartElement>();
 
-    @XmlElement(namespace = "http://us.harward.xmlns/rolodex", name = "contacts")
-    public void contactList(final StartElement se) {
-        contactLists.add(se);
+    @XmlElement(namespace = "http://us.harward.xmlns/rolodex", name = "address")
+    public void address(final StartElement se) {
+        addresses.add(se);
     }
 
-    public Collection<StartElement> getContactListEvents() {
-        return Collections.unmodifiableCollection(contactLists);
+    public Collection<StartElement> getAddressEvents() {
+        return Collections.unmodifiableCollection(addresses);
     }
 
     public void reset() {
-        contactLists.clear();
+        addresses.clear();
     }
 
 }

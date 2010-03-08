@@ -17,31 +17,47 @@
 
 package us.harward.commons.xml.saxbp.handlers;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.xml.XMLConstants;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.stream.events.StartElement;
+import javax.xml.stream.events.EndDocument;
+import javax.xml.stream.events.StartDocument;
 
 import us.harward.commons.xml.saxbp.annotations.SAXBPHandler;
 
 @SAXBPHandler
-public class StAXContactListHandler {
+public final class DocumentHandler {
 
-    private final Collection<StartElement> contactLists = new LinkedList<StartElement>();
+    final AtomicBoolean documentStarted;
+    final AtomicBoolean documentEnded;
 
-    @XmlElement(namespace = "http://us.harward.xmlns/rolodex", name = "contacts")
-    public void contactList(final StartElement se) {
-        contactLists.add(se);
+    public DocumentHandler() {
+        documentStarted = new AtomicBoolean(false);
+        documentEnded = new AtomicBoolean(false);
     }
 
-    public Collection<StartElement> getContactListEvents() {
-        return Collections.unmodifiableCollection(contactLists);
+    @XmlElement(namespace = XMLConstants.NULL_NS_URI, name = "")
+    public void started(final StartDocument ds) {
+        documentStarted.set(true);
+    }
+
+    @XmlElement(namespace = XMLConstants.NULL_NS_URI, name = "")
+    public void ended(final EndDocument ed) {
+        documentEnded.set(true);
+    }
+
+    public boolean started() {
+        return documentStarted.get();
+    }
+
+    public boolean ended() {
+        return documentEnded.get();
     }
 
     public void reset() {
-        contactLists.clear();
+        documentStarted.set(false);
+        documentEnded.set(false);
     }
 
 }

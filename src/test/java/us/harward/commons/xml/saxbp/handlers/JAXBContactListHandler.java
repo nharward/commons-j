@@ -25,25 +25,37 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.annotation.XmlElement;
 
 import us.harward.commons.xml.jaxbtest.rolodex.ContactList;
+import us.harward.commons.xml.jaxbtest.rolodex.PersonType;
 import us.harward.commons.xml.saxbp.annotations.JAXBHandler;
 import us.harward.commons.xml.saxbp.annotations.SAXBPHandler;
 
 @SAXBPHandler
 public class JAXBContactListHandler {
 
-    private final Collection<ContactList> contacts = new LinkedList<ContactList>();
+    private final Collection<ContactList> contactLists = new LinkedList<ContactList>();
+    private final Collection<PersonType>  people       = new LinkedList<PersonType>();
 
     @JAXBHandler(@XmlElement(namespace = "http://us.harward.xmlns/rolodex", name = "contacts"))
-    public void handleContact(final JAXBElement<ContactList> element) {
-        contacts.add(element.getValue());
+    public void contactList(final JAXBElement<ContactList> element) {
+        contactLists.add(element.getValue());
     }
 
-    public Collection<ContactList> getContacts() {
-        return Collections.unmodifiableCollection(contacts);
+    @JAXBHandler(@XmlElement(namespace = "http://us.harward.xmlns/rolodex", name = "contact"))
+    public void person(final JAXBElement<PersonType> element) {
+        people.add(element.getValue());
+    }
+
+    public Collection<ContactList> getContactLists() {
+        return Collections.unmodifiableCollection(contactLists);
+    }
+
+    public Collection<PersonType> getPeople() {
+        return Collections.unmodifiableCollection(people);
     }
 
     public void reset() {
-        contacts.clear();
+        contactLists.clear();
+        people.clear();
     }
 
 }

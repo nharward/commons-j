@@ -21,27 +21,29 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.stream.events.StartElement;
 
+import us.harward.commons.xml.jaxbtest.rolodex.AddressType;
+import us.harward.commons.xml.saxbp.annotations.JAXBHandler;
 import us.harward.commons.xml.saxbp.annotations.SAXBPHandler;
 
 @SAXBPHandler
-public class StAXContactListHandler {
+public class JAXBAddressTypeHandler {
 
-    private final Collection<StartElement> contactLists = new LinkedList<StartElement>();
+    private final Collection<AddressType> addresses = new LinkedList<AddressType>();
 
-    @XmlElement(namespace = "http://us.harward.xmlns/rolodex", name = "contacts")
-    public void contactList(final StartElement se) {
-        contactLists.add(se);
+    @JAXBHandler(@XmlElement(namespace = "http://us.harward.xmlns/rolodex", name = "address"))
+    public void person(final JAXBElement<AddressType> element) {
+        addresses.add(element.getValue());
     }
 
-    public Collection<StartElement> getContactListEvents() {
-        return Collections.unmodifiableCollection(contactLists);
+    public Collection<AddressType> getAddresses() {
+        return Collections.unmodifiableCollection(addresses);
     }
 
     public void reset() {
-        contactLists.clear();
+        addresses.clear();
     }
 
 }

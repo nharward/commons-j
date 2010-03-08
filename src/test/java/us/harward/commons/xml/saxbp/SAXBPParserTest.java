@@ -17,7 +17,6 @@
 
 package us.harward.commons.xml.saxbp;
 
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLStreamException;
@@ -25,30 +24,50 @@ import javax.xml.stream.XMLStreamException;
 import org.junit.Test;
 
 import us.harward.commons.xml.XMLTestBase;
-import us.harward.commons.xml.jaxbtest.rolodex.ContactList;
+import us.harward.commons.xml.saxbp.handlers.DocumentHandler;
+import us.harward.commons.xml.saxbp.handlers.JAXBAddressTypeHandler;
 import us.harward.commons.xml.saxbp.handlers.JAXBContactListHandler;
 import us.harward.commons.xml.saxbp.handlers.StAXContactListHandler;
+import us.harward.commons.xml.saxbp.handlers.StAXPersonHandler;
 
 public class SAXBPParserTest extends XMLTestBase {
 
     @Test
     public final void basicJAXBParse() throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
         final JAXBContactListHandler handler = new JAXBContactListHandler();
-        assert handler.getContacts().isEmpty();
+        assert handler.getContactLists().isEmpty();
         new SAXBPParser().parse(rolodexXml(), rolodexContext(), handler);
-        assert handler.getContacts().size() == 1;
+        assert handler.getContactLists().size() == 1;
     }
 
     @Test
     public final void basicStAXParse() throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
         final StAXContactListHandler handler = new StAXContactListHandler();
-        assert handler.getContactEvents().isEmpty();
+        assert handler.getContactListEvents().isEmpty();
         new SAXBPParser().parse(rolodexXml(), null, handler);
-        assert handler.getContactEvents().size() == 1;
+        assert handler.getContactListEvents().size() == 1;
     }
 
-    private JAXBContext rolodexContext() throws JAXBException {
-        return JAXBContext.newInstance(ContactList.class.getPackage().getName());
+    @Test
+    public final void mixedJaxbAndStAXParse() throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
+        final StAXContactListHandler clHandler = new StAXContactListHandler();
+        final StAXPersonHandler pHandler = new StAXPersonHandler();
+        final JAXBAddressTypeHandler atHandler = new JAXBAddressTypeHandler();
+        final DocumentHandler dHandler = new DocumentHandler();
+
+        assert clHandler.getContactListEvents().isEmpty();
+        assert pHandler.getPeople().isEmpty();
+        assert atHandler.getAddresses().isEmpty();
+        assert !dHandler.started();
+        assert !dHandler.ended();
+
+        new SAXBPParser().parse(rolodexXml(), rolodexContext(), clHandler, pHandler, atHandler, dHandler);
+
+        assert clHandler.getContactListEvents().size() == 1;
+        assert pHandler.getPeople().size() == 2;
+        assert atHandler.getAddresses().size() == 4;
+        assert dHandler.started();
+        assert dHandler.ended();
     }
 
 }

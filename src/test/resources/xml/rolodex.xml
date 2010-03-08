@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <r:contacts xmlns:r="http://us.harward.xmlns/rolodex" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://us.harward.xmlns/rolodex ../schema/rolodex.xsd ">
+    <!--  This is a comment about all contacts -->
     <r:person>
+        <!--  This is a comment about John Doe -->
         <r:last-name>Doe</r:last-name>
         <r:first-name>John</r:first-name>
         <r:address type="home">
@@ -17,6 +19,7 @@
         </r:address>
     </r:person>
     <r:person>
+        <!--  This is a comment about Jane Doe -->
         <r:last-name>Doe</r:last-name>
         <r:first-name>Jane</r:first-name>
         <r:address type="home">

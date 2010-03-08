@@ -19,6 +19,11 @@ package us.harward.commons.xml;
 
 import java.io.InputStream;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+
+import us.harward.commons.xml.jaxbtest.rolodex.ContactList;
+
 public class XMLTestBase {
 
     public InputStream rolodexXml() {
@@ -27,6 +32,10 @@ public class XMLTestBase {
 
     public InputStream xmlStream(final String filename) {
         return XMLTestBase.class.getResourceAsStream("/xml/" + filename);
+    }
+
+    protected static JAXBContext rolodexContext() throws JAXBException {
+        return JAXBContext.newInstance(ContactList.class.getPackage().getName());
     }
 
 }

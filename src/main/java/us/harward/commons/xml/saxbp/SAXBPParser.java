@@ -20,11 +20,18 @@ package us.harward.commons.xml.saxbp;
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 
+import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
+import javax.xml.namespace.QName;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -102,21 +109,48 @@ public class SAXBPParser {
      * @throws JAXBException
      * @throws SAXBPException
      */
-    public void parse(final XMLEventReader reader, final JAXBContext context, final Object... saxbpHandlers)
+    public void parse(final XMLEventReader reader, final JAXBContext jaxbContext, final Object... saxbpHandlers)
             throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
-        final Collection<ParseInterest> interests = ParseInterest.fromHandlers(context, saxbpHandlers);
+        final Map<QName, Collection<ParseInterest>> interestMap = groupInterestByQName(jaxbContext, saxbpHandlers);
+        final Deque<QName> context = new LinkedList<QName>();
         for (XMLEvent event = reader.peek(); event != null; event = reader.peek()) {
+            if (event.isStartDocument()) {
+                context.push(UNNAMED);
+            } else if (event.isStartElement()) {
+                context.push(event.asStartElement().getName());
+            }
             boolean interesting = false;
-            for (final ParseInterest interest : interests) {
-                if (interest.accept(event)) {
-                    interest.handleNextEvent(reader);
-                    interesting = true;
-                    break;
+            if (interestMap.containsKey(context.peek())) {
+                for (final ParseInterest interest : interestMap.get(context.peek())) {
+                    if (interest.accept(event)) {
+                        interest.handleNextEvent(reader);
+                        interesting = true;
+                        if (interest.isJAXB())
+                            context.pop();
+                        break;
+                    }
                 }
             }
+            if (event.isEndDocument() || event.isEndElement())
+                context.pop();
             if (!interesting)
                 reader.next();
         }
     }
+
+    private static Map<QName, Collection<ParseInterest>> groupInterestByQName(final JAXBContext jaxbContext,
+            final Object... saxbpHandlers) throws SAXBPException, JAXBException {
+        final Map<QName, Collection<ParseInterest>> interestMap = new HashMap<QName, Collection<ParseInterest>>();
+        for (final ParseInterest interest : ParseInterest.fromHandlers(jaxbContext, saxbpHandlers)) {
+            Collection<ParseInterest> chain = interestMap.get(interest.qName());
+            if (chain == null)
+                chain = new LinkedList<ParseInterest>();
+            chain.add(interest);
+            interestMap.put(interest.qName(), chain);
+        }
+        return Collections.unmodifiableMap(interestMap);
+    }
+
+    static final QName UNNAMED = new QName(XMLConstants.NULL_NS_URI, "");
 
 }
