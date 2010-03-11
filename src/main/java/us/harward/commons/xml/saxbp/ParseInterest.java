@@ -37,6 +37,7 @@ import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 
+import us.harward.commons.util.DbC;
 import us.harward.commons.util.Pair;
 import us.harward.commons.xml.saxbp.annotations.JAXBHandler;
 import us.harward.commons.xml.saxbp.annotations.SAXBPHandler;
@@ -54,12 +55,12 @@ final class ParseInterest implements EventFilter {
 
     private ParseInterest(final QName qName, final JAXBContext jaxbContext, final Class<?> jaxbClass, final Object handler,
             final Method handlerMethod) throws JAXBException {
-        assert qName != null;
-        assert handler != null;
-        assert handlerMethod != null;
+        DbC.precondition(qName != null, "QName cannot be null");
+        DbC.precondition(handler != null, "Handler cannot be null");
+        DbC.precondition(handlerMethod != null, "Handler method cannot be null");
         this.qName = qName;
         if (jaxbClass != null) {
-            assert jaxbContext != null;
+            DbC.precondition(jaxbContext != null, "JAXBContext cannot be null when using @JAXBHandler annotated methods");
             jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         } else {
             jaxbUnmarshaller = null;
@@ -71,6 +72,7 @@ final class ParseInterest implements EventFilter {
 
     @Override
     public boolean accept(final XMLEvent event) {
+        DbC.notNull(event);
         if (jaxbClass != null) {
             return event.isStartElement() && event.asStartElement().getName().equals(qName);
         } else {
@@ -93,6 +95,7 @@ final class ParseInterest implements EventFilter {
      * @throws XMLStreamException
      */
     void handleNextEvent(final XMLEventReader reader) throws JAXBException, XMLStreamException {
+        DbC.notNull(reader);
         final Object event = jaxbClass != null ? jaxbUnmarshaller.unmarshal(reader, jaxbClass) : reader.nextEvent();
         try {
             handlerMethod.invoke(handler, event);
