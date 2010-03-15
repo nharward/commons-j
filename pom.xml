@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>us.harward</groupId>
     <artifactId>ndh-commons</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>NDH Commons: Utilities for Java 1.6</name>
     <description>Some handy code I've found useful that I haven't found in other projects. I'd be happy to contribute the code here to other projects once the code here matures if it can find a happy home somewhere else.</description>
