@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>us.harward</groupId>
     <artifactId>ndh-commons</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>NDH Commons: Utilities for Java 1.6</name>
     <description>Some handy code I've found useful that I haven't found in other projects. I'd be happy to contribute the code here to other projects once the code here matures if it can find a happy home somewhere else.</description>
@@ -35,9 +35,9 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:svn:http://ndh-commons.googlecode.com/svn/tags/0.1.0</connection>
-        <developerConnection>scm:svn:https://ndh-commons.googlecode.com/svn/tags/0.1.0</developerConnection>
-        <url>http://code.google.com/p/ndh-commons/source/browse/tags/0.1.0</url>
+        <connection>scm:svn:http://ndh-commons.googlecode.com/svn/trunk</connection>
+        <developerConnection>scm:svn:https://ndh-commons.googlecode.com/svn/trunk</developerConnection>
+        <url>http://code.google.com/p/ndh-commons/source/browse/</url>
     </scm>
     <issueManagement>
         <system>Google Code</system>
