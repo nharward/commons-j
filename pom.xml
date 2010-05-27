@@ -19,11 +19,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>us.harward</groupId>
-    <artifactId>ndh-commons</artifactId>
+    <artifactId>ndh-commons-parent</artifactId>
     <version>0.1.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <name>NDH Commons: Utilities for Java 1.6</name>
-    <description>Some handy code I've found useful that I haven't found in other projects. I'd be happy to contribute the code here to other projects once the code here matures if it can find a happy home somewhere else.</description>
+    <packaging>pom</packaging>
+    <name>NDH Commons: POM</name>
     <url>http://code.google.com/p/ndh-commons/</url>
     <inceptionYear>2010</inceptionYear>
     <licenses>
@@ -87,12 +86,6 @@
             <url>scpexe://apollo.harward.us/var/www/html/maven2/sites/ndh-commons</url>
         </site>
     </distributionManagement>
-    <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-    </dependencies>
     <reporting>
         <plugins>
             <plugin>
@@ -126,48 +119,6 @@
     </reporting>
     <build>
         <defaultGoal>package</defaultGoal>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>jaxb2-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>rolodex</id>
-                        <phase>generate-test-sources</phase>
-                        <configuration>
-                            <schemaFiles>rolodex.xsd</schemaFiles>
-                            <packageName>us.harward.commons.xml.jaxbtest.rolodex</packageName>
-                            <outputDirectory>${project.build.directory}/generated-test-sources/jaxb/rolodex</outputDirectory>
-                            <staleFile>${project.build.directory}/generated-test-sources/jaxb/rolodex/.staleFlag</staleFile>
-                        </configuration>
-                        <goals>
-                            <goal>testXjc</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <schemaDirectory>src/test/resources/schema</schemaDirectory>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>add-generated-test-sources</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-test-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>${project.build.directory}/generated-test-sources/jaxb/rolodex</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -205,4 +156,7 @@
             </extension>
         </extensions>
     </build>
+    <modules>
+        <module>nodeps</module>
+    </modules>
 </project>
