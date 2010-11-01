@@ -94,8 +94,8 @@ public class Workflow<F, T> {
             this.postcondition = postcondition;
         else
             this.postcondition = Predicates.alwaysTrue();
-        this.preconditionFailedSink = preconditionFailedSink != null ? preconditionFailedSink : new DevNull<F>();
-        this.postconditionFailedSink = postconditionFailedSink != null ? postconditionFailedSink : new DevNull<T>();
+        this.preconditionFailedSink = preconditionFailedSink != null ? preconditionFailedSink : new DevNullSink<F>();
+        this.postconditionFailedSink = postconditionFailedSink != null ? postconditionFailedSink : new DevNullSink<T>();
     }
 
     /**
@@ -108,7 +108,7 @@ public class Workflow<F, T> {
      */
     public void execute(final Iterable<F> inputs, final Sink<T> output) {
         Preconditions.checkNotNull(inputs);
-        final Sink<T> outputSink = output != null ? output : new DevNull<T>();
+        final Sink<T> outputSink = output != null ? output : new DevNullSink<T>();
         for (final F input : inputs)
             processInput(input, outputSink);
     }
