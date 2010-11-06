@@ -154,7 +154,7 @@ public class WorkflowTest {
         final Workflow<String, Long> toDigitsWF = Workflow.create(hasDigits, digitsFromString, nnLong);
         final Workflow<String, Long> digitsTriple = Workflow.compose(Workflow.create(odd, triple, odd), toDigitsWF);
         assert result.get() == 0L;
-        digitsTriple.apply(Arrays.asList("Nothing here", "Hello, world1", "foo2bar", "Good3bye, cruel wor7d", "1a23b45c"), sink);
+        digitsTriple.apply(new String[] { "Nothing here", "Hello, world1", "foo2bar", "Good3bye, cruel wor7d", "1a23b45c" }, sink);
         assert result.get() == (1L + 37L + 12345L) * 3;
     }
 

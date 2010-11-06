@@ -25,8 +25,8 @@ import com.google.common.base.Predicates;
 
 /**
  * Represents an extremely simple workflow that transforms an input type to an output type. Input and output objects are validated
- * against predicates (if given, otherwise "true" is assumed) and routed to error sinks if they fail (if passed to the
- * <code>apply(...)</code> method families).
+ * against predicates (if given, otherwise "true" is assumed) and routed to error sinks if they fail (if passed to the family of
+ * <code>apply(...)</code> methods).
  * <p>
  * The intention here is to reduce code complexity for applications that have a series of steps to produce output from some given
  * input, by way of the {@link #compose(Workflow, Workflow)} method:
@@ -108,6 +108,18 @@ public class Workflow<F, T> {
     }
 
     /**
+     * Applies the workflow for the set of input objects, placing all (successful) outputs on the given sink.
+     * 
+     * @param input
+     *            the set of inputs to run through the workflow, cannot be null
+     * @param output
+     *            the sink for objects resulting from the workflow that pass the postcondition predicate
+     */
+    public void apply(final F[] inputs, final Sink<T> output) {
+        apply(inputs, output, null, null);
+    }
+
+    /**
      * Same as {@link #apply(Iterable, Sink)}, but allows for collection of rejected inputs or outputs via alternate sinks.
      * 
      * @see {@link #apply(Iterable, Sink)}
@@ -117,6 +129,26 @@ public class Workflow<F, T> {
      *            a {@link Sink} where all outputs failing the postcondition will be sent, may be null
      */
     public void apply(final Iterable<F> inputs, final Sink<T> output, final Sink<F> preconditionFailedSink,
+            final Sink<T> postconditionFailedSink) {
+        Preconditions.checkNotNull(inputs);
+        // The sinks are cached and made non-null, so that if they are null they aren't re-constructed downstream for every input
+        final Sink<T> outputSink = nonNullSink(output);
+        final Sink<F> preFailSink = nonNullSink(preconditionFailedSink);
+        final Sink<T> postFailSink = nonNullSink(postconditionFailedSink);
+        for (final F input : inputs)
+            processInput(input, outputSink, preFailSink, postFailSink);
+    }
+
+    /**
+     * Same as {@link #apply(F[], Sink)}, but allows for collection of rejected inputs or outputs via alternate sinks.
+     * 
+     * @see {@link #apply(F[], Sink)}
+     * @param preconditionFailedSink
+     *            a {@link Sink} where all inputs failing the precondition will be sent, may be null
+     * @param postconditionFailedSink
+     *            a {@link Sink} where all outputs failing the postcondition will be sent, may be null
+     */
+    public void apply(final F[] inputs, final Sink<T> output, final Sink<F> preconditionFailedSink,
             final Sink<T> postconditionFailedSink) {
         Preconditions.checkNotNull(inputs);
         // The sinks are cached and made non-null, so that if they are null they aren't re-constructed downstream for every input
