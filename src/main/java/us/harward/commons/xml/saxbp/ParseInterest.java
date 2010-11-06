@@ -37,10 +37,11 @@ import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 
-import us.harward.commons.util.DbC;
 import us.harward.commons.util.Pair;
 import us.harward.commons.xml.saxbp.annotations.JAXBHandler;
 import us.harward.commons.xml.saxbp.annotations.SAXBPHandler;
+
+import com.google.common.base.Preconditions;
 
 /**
  * This class handles all of the terrible noise that is introspection and dynamic method invocation on POJO callbacks. Yuck!
@@ -55,12 +56,12 @@ final class ParseInterest implements EventFilter {
 
     private ParseInterest(final QName qName, final JAXBContext jaxbContext, final Class<?> jaxbClass, final Object handler,
             final Method handlerMethod) throws JAXBException {
-        DbC.precondition(qName != null, "QName cannot be null");
-        DbC.precondition(handler != null, "Handler cannot be null");
-        DbC.precondition(handlerMethod != null, "Handler method cannot be null");
+        Preconditions.checkNotNull(qName, "QName cannot be null");
+        Preconditions.checkNotNull(handler, "Handler cannot be null");
+        Preconditions.checkNotNull(handlerMethod, "Handler method cannot be null");
         this.qName = qName;
         if (jaxbClass != null) {
-            DbC.precondition(jaxbContext != null, "JAXBContext cannot be null when using @JAXBHandler annotated methods");
+            Preconditions.checkNotNull(jaxbContext, "JAXBContext cannot be null when using @JAXBHandler annotated methods");
             jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         } else {
             jaxbUnmarshaller = null;
@@ -72,7 +73,7 @@ final class ParseInterest implements EventFilter {
 
     @Override
     public boolean accept(final XMLEvent event) {
-        DbC.notNull(event);
+        Preconditions.checkNotNull(event);
         if (jaxbClass != null) {
             return event.isStartElement() && event.asStartElement().getName().equals(qName);
         } else {
@@ -95,7 +96,7 @@ final class ParseInterest implements EventFilter {
      * @throws XMLStreamException
      */
     void handleNextEvent(final XMLEventReader reader) throws JAXBException, XMLStreamException {
-        DbC.notNull(reader);
+        Preconditions.checkNotNull(reader);
         final Object event = jaxbClass != null ? jaxbUnmarshaller.unmarshal(reader, jaxbClass) : reader.nextEvent();
         try {
             handlerMethod.invoke(handler, event);

@@ -40,9 +40,10 @@ import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
 import javax.xml.transform.Source;
 
-import us.harward.commons.util.DbC;
 import us.harward.commons.xml.saxbp.annotations.JAXBHandler;
 import us.harward.commons.xml.saxbp.annotations.SAXBPHandler;
+
+import com.google.common.base.Preconditions;
 
 /**
  * An XML parser that is [an attempt at] a best-of combination of SAX/JAXB/StAX, hence the name. The idea is to combine the
@@ -60,7 +61,7 @@ public class SAXBPParser {
      */
     public void parse(final InputStream is, final JAXBContext context, final Object... saxbpHandlers) throws XMLStreamException,
             FactoryConfigurationError, JAXBException, SAXBPException {
-        DbC.notNull(is, "InputStream may not be null");
+        Preconditions.checkNotNull(is, "InputStream may not be null");
         parse(XMLInputFactory.newInstance().createXMLEventReader(is), context, saxbpHandlers);
     }
 
@@ -72,7 +73,7 @@ public class SAXBPParser {
      */
     public void parse(final Reader reader, final JAXBContext context, final Object... saxbpHandlers) throws XMLStreamException,
             FactoryConfigurationError, JAXBException, SAXBPException {
-        DbC.notNull(reader, "Reader may not be null");
+        Preconditions.checkNotNull(reader, "Reader may not be null");
         parse(XMLInputFactory.newInstance().createXMLEventReader(reader), context, saxbpHandlers);
     }
 
@@ -84,7 +85,7 @@ public class SAXBPParser {
      */
     public void parse(final Source source, final JAXBContext context, final Object... saxbpHandlers) throws XMLStreamException,
             FactoryConfigurationError, JAXBException, SAXBPException {
-        DbC.notNull(source, "Source may not be null");
+        Preconditions.checkNotNull(source, "Source may not be null");
         parse(XMLInputFactory.newInstance().createXMLEventReader(source), context, saxbpHandlers);
     }
 
@@ -96,7 +97,7 @@ public class SAXBPParser {
      */
     public void parse(final XMLStreamReader reader, final JAXBContext context, final Object... saxbpHandlers)
             throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
-        DbC.notNull(reader, "XMLStreamReader may not be null");
+        Preconditions.checkNotNull(reader, "XMLStreamReader may not be null");
         parse(XMLInputFactory.newInstance().createXMLEventReader(reader), context, saxbpHandlers);
     }
 
@@ -116,12 +117,12 @@ public class SAXBPParser {
      */
     public void parse(final XMLEventReader reader, final JAXBContext jaxbContext, final Object... saxbpHandlers)
             throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
-        DbC.notNull(reader, "XMLEventReader cannot be null");
-        DbC.notNull(saxbpHandlers, "At least one handler must be specified");
-        DbC.precondition(saxbpHandlers.length > 0, "At least one handler must be specified");
+        Preconditions.checkNotNull(reader, "XMLEventReader cannot be null");
+        Preconditions.checkNotNull(saxbpHandlers, "At least one handler must be specified");
+        Preconditions.checkArgument(saxbpHandlers.length > 0, "At least one handler must be specified");
         final Map<QName, Collection<ParseInterest>> interestMap = groupInterestByQName(jaxbContext, saxbpHandlers);
         final Deque<QName> context = new LinkedList<QName>();
-        DbC.invariant(context.isEmpty());
+        Preconditions.checkArgument(context.isEmpty());
         for (XMLEvent event = reader.peek(); event != null; event = reader.peek()) {
             if (event.isStartDocument()) {
                 context.push(UNNAMED);
@@ -145,7 +146,7 @@ public class SAXBPParser {
             if (!interesting)
                 reader.next();
         }
-        DbC.invariant(context.isEmpty());
+        Preconditions.checkArgument(context.isEmpty());
     }
 
     private static Map<QName, Collection<ParseInterest>> groupInterestByQName(final JAXBContext jaxbContext,
