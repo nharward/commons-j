@@ -180,7 +180,7 @@ public class WorkflowTest {
         assert postCount.get() == 0;
         assert result.get() == 0;
         final Workflow<Long, Long> wf = Workflow.create(even, triple, odd);
-        wf.apply(Arrays.asList(0L, 1L, 2L, 3L, 4L, 5L), sink, preSink, postSink);
+        wf.apply(Arrays.asList(0L, 1L, 2L, 3L, 4L, 5L).iterator(), sink, preSink, postSink);
         assert preCount.get() == 1L + 3L + 5L;
         assert postCount.get() == (0L + 2L + 4L) * 3;
         assert result.get() == 0L;

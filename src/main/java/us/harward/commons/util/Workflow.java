@@ -17,6 +17,8 @@
 
 package us.harward.commons.util;
 
+import java.util.Iterator;
+
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
@@ -115,8 +117,40 @@ public class Workflow<F, T> {
      * @param output
      *            the sink for objects resulting from the workflow that pass the postcondition predicate
      */
+    public void apply(final Iterator<F> inputs, final Sink<T> output) {
+        apply(inputs, output, null, null);
+    }
+
+    /**
+     * Applies the workflow for the set of input objects, placing all (successful) outputs on the given sink.
+     * 
+     * @param input
+     *            the set of inputs to run through the workflow, cannot be null
+     * @param output
+     *            the sink for objects resulting from the workflow that pass the postcondition predicate
+     */
     public void apply(final F[] inputs, final Sink<T> output) {
         apply(inputs, output, null, null);
+    }
+
+    /**
+     * Same as {@link #apply(Iterator, Sink)}, but allows for collection of rejected inputs or outputs via alternate sinks.
+     * 
+     * @see {@link #apply(Iterator, Sink)}
+     * @param preconditionFailedSink
+     *            a {@link Sink} where all inputs failing the precondition will be sent, may be null
+     * @param postconditionFailedSink
+     *            a {@link Sink} where all outputs failing the postcondition will be sent, may be null
+     */
+    public void apply(final Iterator<F> inputs, final Sink<T> output, final Sink<F> preconditionFailedSink,
+            final Sink<T> postconditionFailedSink) {
+        Preconditions.checkNotNull(inputs);
+        // The sinks are cached and made non-null, so that if they are null they aren't re-constructed downstream for every input
+        final Sink<T> outputSink = nonNullSink(output);
+        final Sink<F> preFailSink = nonNullSink(preconditionFailedSink);
+        final Sink<T> postFailSink = nonNullSink(postconditionFailedSink);
+        while (inputs.hasNext())
+            processInput(inputs.next(), outputSink, preFailSink, postFailSink);
     }
 
     /**
