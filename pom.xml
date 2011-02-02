@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>us.harward</groupId>
     <artifactId>ndh-commons</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>NDH Commons</name>
     <url>http://code.google.com/p/ndh-commons/</url>
