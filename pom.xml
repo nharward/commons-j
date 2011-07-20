@@ -23,7 +23,8 @@
     <version>0.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>NDH Commons</name>
-    <url>http://code.google.com/p/ndh-commons/</url>
+    <description>Collection of Java 1.6+ utility code I find useful that I didn't find elsewhere.</description>
+    <url>https://github.com/nharward/ndh-commons</url>
     <inceptionYear>2010</inceptionYear>
     <licenses>
         <license>
@@ -34,13 +35,13 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:svn:http://ndh-commons.googlecode.com/svn/trunk</connection>
-        <developerConnection>scm:svn:https://ndh-commons.googlecode.com/svn/trunk</developerConnection>
-        <url>http://code.google.com/p/ndh-commons/source/browse/</url>
+        <connection>scm:git:git://github.com/nharward/ndh-commons.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:nharward/ndh-commons.git</developerConnection>
+        <url>https://github.com/nharward/ndh-commons</url>
     </scm>
     <issueManagement>
-        <system>Google Code</system>
-        <url>http://code.google.com/p/ndh-commons/issues/list</url>
+        <system>Github</system>
+        <url>https://github.com/nharward/ndh-commons/issues</url>
     </issueManagement>
     <developers>
         <developer>
@@ -96,22 +97,27 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-changelog-plugin</artifactId>
+                <version>2.2</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.6</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.8</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jxr-plugin</artifactId>
+                <version>2.2</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
+                <version>2.5</version>
                 <configuration>
                     <targetJdk>1.6</targetJdk>
                 </configuration>
@@ -119,6 +125,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.9</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.1.1</version>
             </plugin>
         </plugins>
     </reporting>
@@ -140,6 +152,7 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
+                        <encoding>utf-8</encoding>
                         <source>1.6</source>
                         <target>1.6</target>
                     </configuration>
@@ -160,6 +173,11 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
                     <version>1.5</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.0-beta-3</version>
                 </plugin>
             </plugins>
         </pluginManagement>
