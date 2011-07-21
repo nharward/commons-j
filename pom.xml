@@ -2,29 +2,29 @@
 <!--
     Copyright 2010 Nathaniel Harward.
 
-    This file is part of ndh-commons. ndh-commons is free software:
+    This file is part of commons-j. commons-j is free software:
     you can redistribute it and/or modify it under the terms of the GNU
     General Public License as published by the Free Software Foundation,
     either version 3 of the License, or (at your option) any later version.
 
-    ndh-commons is distributed in the hope that it will be useful,
+    commons-j is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
     General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with ndh-commons, see the file LICENSE.txt. If not, see
+    along with commons-j, see the file LICENSE.txt. If not, see
     <http://www.gnu.org/licenses />.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>us.harward</groupId>
-    <artifactId>ndh-commons</artifactId>
+    <artifactId>commons-j</artifactId>
     <version>0.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>NDH Commons</name>
     <description>Collection of Java 1.6+ utility code I find useful that I didn't find elsewhere.</description>
-    <url>https://github.com/nharward/ndh-commons</url>
+    <url>https://github.com/nharward/commons-j</url>
     <inceptionYear>2010</inceptionYear>
     <licenses>
         <license>
@@ -35,13 +35,13 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:git:git://github.com/nharward/ndh-commons.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:nharward/ndh-commons.git</developerConnection>
-        <url>https://github.com/nharward/ndh-commons</url>
+        <connection>scm:git:git://github.com/nharward/commons-j.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:nharward/commons-j.git</developerConnection>
+        <url>https://github.com/nharward/commons-j</url>
     </scm>
     <issueManagement>
         <system>Github</system>
-        <url>https://github.com/nharward/ndh-commons/issues</url>
+        <url>https://github.com/nharward/commons-j/issues</url>
     </issueManagement>
     <developers>
         <developer>
@@ -87,9 +87,9 @@
             <layout>default</layout>
         </snapshotRepository>
         <site>
-            <id>us.harward.ndh-commons.website</id>
-            <name>Maven 2-Generated Website for ndh-commons</name>
-            <url>scpexe://apollo.harward.us/var/www/html/maven2/sites/ndh-commons</url>
+            <id>us.harward.commons-j.website</id>
+            <name>Maven 2-Generated Website for commons-j</name>
+            <url>scpexe://apollo.harward.us/var/www/html/maven2/sites/commons-j</url>
         </site>
     </distributionManagement>
     <reporting>
