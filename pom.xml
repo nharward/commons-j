@@ -36,7 +36,7 @@
     </licenses>
     <scm>
         <connection>scm:git:git://github.com/nharward/commons-j.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:nharward/commons-j.git</developerConnection>
+        <developerConnection>scm:git:ssh://git@github.com/nharward/commons-j.git</developerConnection>
         <url>https://github.com/nharward/commons-j</url>
     </scm>
     <issueManagement>
