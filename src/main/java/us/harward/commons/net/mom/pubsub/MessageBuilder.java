@@ -62,6 +62,9 @@ final class MessageBuilder {
                 message = new SubscriptionMessage(body);
             else
                 throw new MessageFormatException("Unknown message type[" + type.toString(Charsets.UTF_8) + "]");
+            type.clear();
+            length.clear();
+            body = null;
         } else
             message = null;
         return message;

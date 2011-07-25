@@ -1,0 +1,123 @@
+// Copyright 2011 Nathaniel Harward
+//
+// This file is part of commons-j.
+//
+// commons-j is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// commons-j is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with commons-j. If not, see <http://www.gnu.org/licenses/>.
+
+package us.harward.commons.net.mom.pubsub;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.jboss.netty.buffer.ChannelBuffers;
+
+import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
+
+public final class Megaphone implements PubSubClient.MessageCallback, PubSubClient.NetworkConnectionLifecycleCallback {
+
+    private final AtomicBoolean connected;
+    private final PubSubClient  client;
+    private final String[]      topics;
+
+    private final Lock          lock;
+    private final Condition     condition;
+
+    Megaphone(final String... topics) throws Exception {
+        Preconditions.checkNotNull(topics);
+        Preconditions.checkArgument(topics.length > 0);
+        lock = new ReentrantLock();
+        condition = lock.newCondition();
+        connected = new AtomicBoolean(false);
+        this.topics = topics;
+        client = new PubSubClient(Executors.newCachedThreadPool(new ThreadFactory() {
+
+            @Override
+            public Thread newThread(final Runnable r) {
+                final Thread t = new Thread(r);
+                t.setDaemon(true);
+                return t;
+            }
+
+        }), this, new InetSocketAddress(InetAddress.getLocalHost(), PubSubServer.DEFAULT_ADDRESS.getPort()));
+        for (final String topic : topics)
+            client.subscribe(topic, this);
+    }
+
+    private void go() throws Exception {
+        client.start();
+        final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        for (;;) {
+            if (connected.get()) {
+                System.out.print("Enter a message to broadcast (or 'quit'): ");
+                System.out.flush();
+                final String line = br.readLine();
+                if ("quit".equals(line)) {
+                    break;
+                }
+                final byte[] message = line.getBytes(Charsets.UTF_8);
+                for (final String topic : topics)
+                    client.publish(message, topic);
+            } else {
+                lock.lock();
+                try {
+                    if (!connected.get()) {
+                        System.out.println("Not connected to server, waiting for [re]connect...");
+                        condition.await();
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            }
+        }
+        br.close();
+        client.stop();
+    }
+
+    @Override
+    public void connectionDown(final SocketAddress endpoint) {
+        connected.set(false);
+    }
+
+    @Override
+    public void connectionUp(final SocketAddress endpoint) {
+        connected.set(true);
+        lock.lock();
+        try {
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void onMessage(final ByteBuffer message) throws Exception {
+        System.out.printf("Received message[%s]", ChannelBuffers.wrappedBuffer(message).toString(Charsets.UTF_8));
+    }
+
+    public static void main(final String... args) throws Throwable {
+        new Megaphone(args).go();
+    }
+
+}
