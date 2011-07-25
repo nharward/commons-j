@@ -37,7 +37,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +87,7 @@ public final class PubSubClient {
         this.servers = servers;
         activeChannelFuture = new AtomicReference<ChannelFuture>(null);
         handler = new ClientMessageHandler(service);
-        factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+        factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
         bootstrap = new ClientBootstrap(factory);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 

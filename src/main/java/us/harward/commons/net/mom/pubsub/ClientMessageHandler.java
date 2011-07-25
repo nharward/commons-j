@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -67,7 +67,7 @@ final class ClientMessageHandler extends SimpleChannelHandler {
             if (subscribers.containsKey(topic)) {
                 group = subscribers.get(topic);
             } else {
-                group = new ConcurrentSkipListSet<PubSubClient.MessageCallback>();
+                group = new CopyOnWriteArrayList<PubSubClient.MessageCallback>();
                 subscribers.put(topic, group);
                 final Channel channel = activeChannel.get();
                 if (channel != null) {
