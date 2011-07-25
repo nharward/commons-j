@@ -57,9 +57,11 @@ public final class ApplicationMessage extends Message {
     ApplicationMessage(final ChannelBuffer body) {
         super(Type.Application);
         this.body = ChannelBuffers.copiedBuffer(body);
+        this.body.markReaderIndex();
         final byte[] topicBytes = new byte[this.body.readInt()];
         this.body.readBytes(topicBytes);
         topic = new String(topicBytes, Charsets.UTF_8);
+        this.body.resetReaderIndex();
     }
 
     @Override
@@ -70,6 +72,11 @@ public final class ApplicationMessage extends Message {
     @Override
     void marshallBody(final ChannelBuffer buffer) {
         buffer.writeBytes(body, 0, body.capacity());
+    }
+
+    ByteBuffer applicationBody() {
+        final int offset = 4 + topic.getBytes(Charsets.UTF_8).length;
+        return body.toByteBuffer(offset, body.writerIndex() - offset).asReadOnlyBuffer();
     }
 
 }

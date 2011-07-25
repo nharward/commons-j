@@ -22,8 +22,6 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -33,12 +31,12 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
 
 @Sharable
-final class MessageHandler extends SimpleChannelHandler {
+final class ServerMessageHandler extends SimpleChannelHandler {
 
     private final Map<String, DefaultChannelGroup> subscribers;
     private final Lock                             lock;
 
-    MessageHandler() {
+    ServerMessageHandler() {
         subscribers = new ConcurrentHashMap<String, DefaultChannelGroup>();
         lock = new ReentrantLock();
     }
@@ -46,63 +44,67 @@ final class MessageHandler extends SimpleChannelHandler {
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
         final Object o = e.getMessage();
-        if (o instanceof SubscriptionMessage) {
-            handleSubscriptionRequest(ctx, (SubscriptionMessage) o);
-        } else if (o instanceof ApplicationMessage) {
+        if (o instanceof ApplicationMessage)
             handleApplicationMessage(ctx, (ApplicationMessage) o);
-        } else
+        else if (o instanceof SubscriptionMessage)
+            handleSubscriptionRequest(ctx, (SubscriptionMessage) o);
+        else
             super.messageReceived(ctx, e);
     }
 
+    /*
+     * Broadcast this incoming application message to all subscribers of the topic (except for the client who sent it)
+     */
     private void handleApplicationMessage(final ChannelHandlerContext ctx, final ApplicationMessage msg) {
         final DefaultChannelGroup group = subscribers.get(msg.topic);
         if (group != null) {
-            final ChannelBuffer tmp = ChannelBuffers.dynamicBuffer(8 + msg.estimatedBodySize());
-            msg.marshall(tmp);
-            final ChannelBuffer netmsg = ChannelBuffers.unmodifiableBuffer(tmp);
-            final Iterator<Channel> pos = group.iterator();
             final Channel source = ctx.getChannel();
+            final Iterator<Channel> pos = group.iterator();
             while (pos.hasNext()) {
                 final Channel channel = pos.next();
-                netmsg.markReaderIndex();
-                netmsg.markWriterIndex();
                 if (channel.getId() != source.getId())
-                    channel.write(netmsg);
-                netmsg.resetReaderIndex();
-                netmsg.resetWriterIndex();
+                    channel.write(msg);
             }
         }
     }
 
     private void handleSubscriptionRequest(final ChannelHandlerContext ctx, final SubscriptionMessage msg) {
-        if (msg.subscribe) {
-            for (final String topic : msg.topics) {
-                DefaultChannelGroup group;
-                lock.lock();
-                try {
+        if (msg.subscribe)
+            subscribe(ctx.getChannel(), msg.topics);
+        else
+            unsubscribe(ctx.getChannel(), msg.topics);
+    }
+
+    private void subscribe(final Channel channel, final String... topics) {
+        for (final String topic : topics) {
+            lock.lock();
+            try {
+                final DefaultChannelGroup group;
+                if (subscribers.containsKey(topic))
                     group = subscribers.get(topic);
-                    if (group == null) {
-                        group = new DefaultChannelGroup(topic);
-                        group.add(ctx.getChannel());
-                        subscribers.put(topic, group);
-                    }
-                } finally {
-                    lock.unlock();
+                else {
+                    group = new DefaultChannelGroup(topic);
+                    subscribers.put(topic, group);
                 }
+                group.add(channel);
+            } finally {
+                lock.unlock();
             }
-        } else {
-            for (final String topic : msg.topics) {
+        }
+    }
+
+    private void unsubscribe(final Channel channel, final String... topics) {
+        for (final String topic : topics) {
+            lock.lock();
+            try {
                 final DefaultChannelGroup group = subscribers.get(topic);
                 if (group != null) {
-                    group.remove(ctx.getChannel());
-                    lock.lock();
-                    try {
-                        if (group.isEmpty())
-                            subscribers.remove(topic);
-                    } finally {
-                        lock.unlock();
-                    }
+                    group.remove(channel);
+                    if (group.isEmpty())
+                        subscribers.remove(topic);
                 }
+            } finally {
+                lock.unlock();
             }
         }
     }

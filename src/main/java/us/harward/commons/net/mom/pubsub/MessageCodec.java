@@ -18,17 +18,63 @@
 package us.harward.commons.net.mom.pubsub;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelDownstreamHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelUpstreamHandler;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
+import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 
-final class MessageCodec extends FrameDecoder {
+import com.google.common.base.Preconditions;
 
-    private final MessageBuilder builder = new MessageBuilder();
+final class MessageCodec {
 
-    @Override
-    protected Object decode(final ChannelHandlerContext ctx, final Channel channel, final ChannelBuffer buffer) throws Exception {
-        return builder.add(buffer);
+    private static final class Decoder extends FrameDecoder {
+
+        private final MessageBuilder builder = new MessageBuilder();
+
+        @Override
+        protected Object decode(final ChannelHandlerContext ctx, final Channel channel, final ChannelBuffer buffer)
+                throws Exception {
+            return builder.add(buffer);
+        }
+
+        @Override
+        public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) throws Exception {
+            if (e.getCause() instanceof MessageFormatException)
+                e.getChannel().close();
+            else
+                super.exceptionCaught(ctx, e);
+        }
+    }
+
+    private static final class Encoder extends OneToOneEncoder {
+
+        @Override
+        protected Object encode(final ChannelHandlerContext ctx, final Channel channel, final Object msg) throws Exception {
+            if (msg instanceof Message) {
+                final Message m = (Message) msg;
+                final ChannelBuffer rv = ChannelBuffers.dynamicBuffer(8 + m.estimatedBodySize());
+                m.marshall(rv);
+                return ChannelBuffers.unmodifiableBuffer(rv);
+            } else
+                return msg;
+        }
+
+    }
+
+    private MessageCodec() {
+        Preconditions.checkArgument(false, "Please use the encoder()/decoder() methods instead");
+    }
+
+    static ChannelDownstreamHandler encoder() {
+        return new Encoder();
+    }
+
+    static ChannelUpstreamHandler decoder() {
+        return new Decoder();
     }
 
 }

@@ -32,10 +32,14 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class PubSubServer {
 
     public static final InetSocketAddress       DEFAULT_ADDRESS = new InetSocketAddress(9000);
+
+    private static final Logger                 logger          = LoggerFactory.getLogger(PubSubServer.class);
 
     private final Collection<InetSocketAddress> listenAddresses;
     private final ChannelFactory                factory;
@@ -53,11 +57,11 @@ public final class PubSubServer {
         openChannels = new DefaultChannelGroup(getClass().getName());
         factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
         bootstrap = new ServerBootstrap(factory);
-        final MessageHandler sharedMessageHandler = new MessageHandler();
+        final ServerMessageHandler sharedMessageHandler = new ServerMessageHandler();
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 
             public ChannelPipeline getPipeline() {
-                return Channels.pipeline(new MessageCodec(), sharedMessageHandler);
+                return Channels.pipeline(MessageCodec.decoder(), MessageCodec.encoder(), sharedMessageHandler);
             }
 
         });
@@ -66,14 +70,22 @@ public final class PubSubServer {
     }
 
     public void start() {
-        for (final InetSocketAddress address : listenAddresses)
+        for (final InetSocketAddress address : listenAddresses) {
+            logger.info("Starting listener on {}", address);
             openChannels.add(bootstrap.bind(address));
+        }
+        logger.info("Server startup complete");
     }
 
-    public void stop() {
+    public void stop() throws InterruptedException {
+        logger.info("Server shutting down...");
         final ChannelGroupFuture future = openChannels.close();
-        future.awaitUninterruptibly();
-        factory.releaseExternalResources();
+        try {
+            future.await();
+        } finally {
+            factory.releaseExternalResources();
+        }
+        logger.info("Server shut down.");
     }
 
     /**
@@ -101,7 +113,11 @@ public final class PubSubServer {
 
             @Override
             public void run() {
-                pss.stop();
+                try {
+                    pss.stop();
+                } catch (final InterruptedException ie) {
+                    logger.error("Interrupted while waiting for server to shut down", ie);
+                }
             }
 
         }));
