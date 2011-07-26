@@ -100,7 +100,6 @@ public final class PubSubClient {
 
     public void start() {
         reconnectHandler.enable();
-        bootstrap.connect(servers[RANDOM.nextInt(servers.length)]);
     }
 
     public void stop() throws InterruptedException {

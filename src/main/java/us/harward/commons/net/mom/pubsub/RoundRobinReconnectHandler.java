@@ -65,6 +65,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     private final Lock                                            lock;
     private final Timer                                           timer;
     private final AtomicReference<Channel>                        currentChannel;
+    private final AtomicReference<InetSocketAddress>              currentRemoteAddress;
 
     RoundRobinReconnectHandler(final ClientBootstrap bootstrap, final int retryDelay, final TimeUnit retryUnits,
             final PubSubClient.NetworkConnectionLifecycleCallback callback, final InetSocketAddress... servers) {
@@ -82,10 +83,11 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
             if (isa != null)
                 availableServers.add(isa);
         Preconditions.checkArgument(!availableServers.isEmpty(), "Server list was empty or had null values");
-        enabled = new AtomicBoolean(true);
+        enabled = new AtomicBoolean(false);
         lock = new ReentrantLock();
         timer = new HashedWheelTimer();
         currentChannel = new AtomicReference<Channel>(null);
+        currentRemoteAddress = new AtomicReference<InetSocketAddress>(null);
     }
 
     Channel channel() {
@@ -94,6 +96,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
 
     void enable() {
         enabled.set(true);
+        reconnect();
     }
 
     void disable() {
@@ -101,19 +104,18 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     }
 
     void shutdown() {
-        disable(); // For good measure
+        disable();
         final Channel c = currentChannel.get();
         if (c != null)
             c.close();
-        else
-            logger.warn("Asked to shut down, but no active connection");
+        timer.stop();
     }
 
     @Override
     public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
         currentChannel.set(null);
         final SocketAddress remote = e.getChannel().getRemoteAddress();
-        logger.warn("Disconnected from PubSub server: {}", remote);
+        logger.debug("Disconnected from server: {}", remote);
         if (callback != null)
             callback.connectionDown(remote);
         super.channelDisconnected(ctx, e);
@@ -123,7 +125,11 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     public void channelClosed(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
         lock.lock();
         try {
-            final InetSocketAddress failedAddress = (InetSocketAddress) e.getChannel().getRemoteAddress();
+            final InetSocketAddress failedAddress;
+            if (e.getChannel().getRemoteAddress() != null)
+                failedAddress = (InetSocketAddress) e.getChannel().getRemoteAddress();
+            else
+                failedAddress = currentRemoteAddress.get();
             Preconditions.checkArgument(availableServers.contains(failedAddress));
             Preconditions.checkArgument(!failedServers.contains(failedAddress));
             availableServers.remove(failedAddress);
@@ -139,7 +145,8 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
         currentChannel.set(e.getChannel());
         final SocketAddress remote = e.getChannel().getRemoteAddress();
-        logger.info("Established connection to server {}", remote);
+        currentRemoteAddress.set((InetSocketAddress) remote);
+        logger.debug("Established connection to server {}", remote);
         if (callback != null)
             callback.connectionUp(remote);
         super.channelConnected(ctx, e);
@@ -149,7 +156,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
         final Throwable cause = e.getCause();
         if (cause instanceof ConnectException)
-            logger.warn("Unable to establish connection to: " + ctx.getChannel().getRemoteAddress(), cause);
+            logger.warn("Unable to establish connection to {}", currentRemoteAddress.get());
         ctx.getChannel().close();
     }
 
@@ -160,7 +167,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
             lock.lock();
             try {
                 if (availableServers.isEmpty()) {
-                    logger.error("No servers are available, will re-try in [{}/{}]", retryDelay, retryUnits);
+                    logger.info("No servers are available, will re-try in [{}/{}]", retryDelay, retryUnits);
                     timer.newTimeout(new TimerTask() {
 
                         @Override
@@ -176,8 +183,12 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
                         }
 
                     }, retryDelay, retryUnits);
-                } else
-                    bootstrap.connect(availableServers.get(RANDOM.nextInt(availableServers.size())));
+                } else {
+                    final InetSocketAddress server = availableServers.get(RANDOM.nextInt(availableServers.size()));
+                    currentRemoteAddress.set(server);
+                    logger.debug("Have available servers[{}], calling connect() with {}", availableServers, server);
+                    bootstrap.connect(server);
+                }
             } finally {
                 lock.unlock();
             }
