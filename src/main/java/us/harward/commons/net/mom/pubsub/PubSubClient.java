@@ -25,18 +25,14 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,53 +62,35 @@ public final class PubSubClient {
 
     }
 
-    private static final Logger            logger = LoggerFactory.getLogger(PubSubClient.class);
-    private static final Random            RANDOM = new SecureRandom();
+    private static final Logger              logger = LoggerFactory.getLogger(PubSubClient.class);
+    private static final Random              RANDOM = new SecureRandom();
 
-    private final InetSocketAddress[]      servers;
-    private final ClientMessageHandler     handler;
+    private final InetSocketAddress[]        servers;
+    private final ClientMessageHandler       clientHandler;
+    private final RoundRobinReconnectHandler reconnectHandler;
 
-    private final ChannelFactory           factory;
-    private final ClientBootstrap          bootstrap;
-    private AtomicReference<ChannelFuture> activeChannelFuture;
+    private final ChannelFactory             factory;
+    private final ClientBootstrap            bootstrap;
 
-    public PubSubClient(final ExecutorService service, final InetSocketAddress... servers) {
-        this(service, null, servers);
+    public PubSubClient(final ExecutorService service, final int retryDelay, final TimeUnit retryUnits,
+            final InetSocketAddress... servers) {
+        this(service, null, retryDelay, retryUnits, servers);
     }
 
     public PubSubClient(final ExecutorService service, final NetworkConnectionLifecycleCallback lifecycleCallback,
-            final InetSocketAddress... servers) {
+            final int retryDelay, final TimeUnit retryUnits, final InetSocketAddress... servers) {
         Preconditions.checkNotNull(service, "ExecutorService cannot be null");
         Preconditions.checkNotNull(servers, "Must give at least one server address to connect to");
         this.servers = servers;
-        activeChannelFuture = new AtomicReference<ChannelFuture>(null);
-        handler = new ClientMessageHandler(service);
+        clientHandler = new ClientMessageHandler(service);
         factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
         bootstrap = new ClientBootstrap(factory);
+        reconnectHandler = new RoundRobinReconnectHandler(bootstrap, retryDelay, retryUnits, lifecycleCallback, servers);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 
+            @Override
             public ChannelPipeline getPipeline() {
-                return Channels.pipeline(new SimpleChannelUpstreamHandler() {
-
-                    @Override
-                    public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
-                        logger.info("Connection established to {}", e.getChannel().getRemoteAddress());
-                        if (lifecycleCallback != null)
-                            lifecycleCallback.connectionUp(e.getChannel().getRemoteAddress());
-                        super.channelConnected(ctx, e);
-                    }
-
-                    @Override
-                    public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
-                        activeChannelFuture.set(null);
-                        logger.info("Connection to {} lost", e.getChannel().getRemoteAddress());
-                        PubSubClient.this.start();
-                        if (lifecycleCallback != null)
-                            lifecycleCallback.connectionDown(e.getChannel().getRemoteAddress());
-                        super.channelDisconnected(ctx, e);
-                    }
-
-                }, MessageCodec.decoder(), MessageCodec.encoder(), handler);
+                return Channels.pipeline(reconnectHandler, MessageCodec.decoder(), MessageCodec.encoder(), clientHandler);
             }
 
         });
@@ -121,30 +99,22 @@ public final class PubSubClient {
     }
 
     public void start() {
-        if (activeChannelFuture.get() != null)
-            return;
-        activeChannelFuture.set(bootstrap.connect(servers[RANDOM.nextInt(servers.length)]));
+        reconnectHandler.enable();
+        bootstrap.connect(servers[RANDOM.nextInt(servers.length)]);
     }
 
     public void stop() throws InterruptedException {
-        ChannelFuture cf = activeChannelFuture.getAndSet(null);
-        if (cf != null) {
-            cf = cf.getChannel().close();
-            try {
-                cf.await();
-            } finally {
-                factory.releaseExternalResources();
-            }
-            logger.info("Client shut down");
-        }
+        reconnectHandler.disable();
+        reconnectHandler.shutdown();
+        factory.releaseExternalResources();
     }
 
     void subscribe(final String topic, final MessageCallback... callbacks) {
-        handler.subscribe(topic, callbacks);
+        clientHandler.subscribe(topic, callbacks);
     }
 
     void unsubscribe(final String topic, final MessageCallback... callbacks) {
-        handler.unsubscribe(topic, callbacks);
+        clientHandler.unsubscribe(topic, callbacks);
     }
 
     Future<Boolean> publish(final byte[] message, final String topic) {
@@ -158,14 +128,9 @@ public final class PubSubClient {
     Future<Boolean> publish(final ByteBuffer message, final String topic) {
         Preconditions.checkNotNull(message, "Message can be empty but not null");
         Preconditions.checkNotNull(topic, "Topic can be empty but not null");
-        final ChannelFuture cf = activeChannelFuture.get();
-        final Channel channel = cf != null ? cf.getChannel() : null;
-        final Future<Boolean> rv;
-        if (channel != null) {
-            rv = new NettyToJDKFuture(channel.write(new ApplicationMessage(message, topic)));
-        } else
-            rv = NettyToJDKFuture.WRITE_FAILED;
-        return rv;
+        final Channel channel = reconnectHandler.channel();
+        return channel != null ? new NettyToJDKFuture(channel.write(new ApplicationMessage(message, topic)))
+                : NettyToJDKFuture.WRITE_FAILED;
     }
 
 }

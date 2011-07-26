@@ -24,7 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -51,16 +51,8 @@ public final class Megaphone implements PubSubClient.MessageCallback, PubSubClie
         condition = lock.newCondition();
         connected = new AtomicBoolean(false);
         this.topics = topics;
-        client = new PubSubClient(Executors.newCachedThreadPool(new ThreadFactory() {
-
-            @Override
-            public Thread newThread(final Runnable r) {
-                final Thread t = new Thread(r);
-                t.setDaemon(true);
-                return t;
-            }
-
-        }), this, new InetSocketAddress(InetAddress.getLocalHost(), PubSubServer.DEFAULT_ADDRESS.getPort()));
+        client = new PubSubClient(Executors.newCachedThreadPool(), this, 5, TimeUnit.SECONDS, new InetSocketAddress(
+                InetAddress.getLocalHost(), PubSubServer.DEFAULT_ADDRESS.getPort()));
         for (final String topic : topics)
             client.subscribe(topic, this);
     }
@@ -75,6 +67,10 @@ public final class Megaphone implements PubSubClient.MessageCallback, PubSubClie
                 final String line = br.readLine();
                 if ("quit".equals(line)) {
                     break;
+                }
+                if (!connected.get()) {
+                    System.out.println("Connection was dropped, message not sent");
+                    continue;
                 }
                 final byte[] message = line.getBytes(Charsets.UTF_8);
                 for (final String topic : topics)
@@ -105,7 +101,7 @@ public final class Megaphone implements PubSubClient.MessageCallback, PubSubClie
         connected.set(true);
         lock.lock();
         try {
-            condition.signal();
+            condition.signalAll();
         } finally {
             lock.unlock();
         }
