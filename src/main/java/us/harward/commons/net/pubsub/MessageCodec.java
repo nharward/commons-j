@@ -33,7 +33,7 @@ final class MessageCodec {
 
     private static final class Decoder extends FrameDecoder {
 
-        private final MessageBuilder builder = new MessageBuilder();
+        private final Message.Builder builder = Message.newBuilder();
 
         @Override
         protected Object decode(final ChannelHandlerContext ctx, final Channel channel, final ChannelBuffer buffer)
