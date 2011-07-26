@@ -20,8 +20,6 @@ package us.harward.commons.net.pubsub;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.security.SecureRandom;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -34,8 +32,6 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
@@ -62,10 +58,6 @@ public final class PubSubClient {
 
     }
 
-    private static final Logger              logger = LoggerFactory.getLogger(PubSubClient.class);
-    private static final Random              RANDOM = new SecureRandom();
-
-    private final InetSocketAddress[]        servers;
     private final ClientMessageHandler       clientHandler;
     private final RoundRobinReconnectHandler reconnectHandler;
 
@@ -81,7 +73,6 @@ public final class PubSubClient {
             final int retryDelay, final TimeUnit retryUnits, final InetSocketAddress... servers) {
         Preconditions.checkNotNull(service, "ExecutorService cannot be null");
         Preconditions.checkNotNull(servers, "Must give at least one server address to connect to");
-        this.servers = servers;
         clientHandler = new ClientMessageHandler(service);
         factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
         bootstrap = new ClientBootstrap(factory);
