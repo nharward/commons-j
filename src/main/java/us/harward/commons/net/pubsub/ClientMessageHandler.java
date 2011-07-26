@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with commons-j. If not, see <http://www.gnu.org/licenses/>.
 
-package us.harward.commons.net.mom.pubsub;
+package us.harward.commons.net.pubsub;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import us.harward.commons.net.mom.pubsub.PubSubClient.MessageCallback;
+import us.harward.commons.net.pubsub.PubSubClient.MessageCallback;
 
 import com.google.common.base.Preconditions;
 

@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with commons-j. If not, see <http://www.gnu.org/licenses/>.
 
-package us.harward.commons.net.mom.pubsub;
+package us.harward.commons.net.pubsub;
 
 @SuppressWarnings("serial")
 final class MessageFormatException extends Exception {

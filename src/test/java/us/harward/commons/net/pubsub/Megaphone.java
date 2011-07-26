@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with commons-j. If not, see <http://www.gnu.org/licenses/>.
 
-package us.harward.commons.net.mom.pubsub;
+package us.harward.commons.net.pubsub;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -33,6 +33,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.netty.buffer.ChannelBuffers;
+
+import us.harward.commons.net.pubsub.PubSubClient;
+import us.harward.commons.net.pubsub.PubSubServer;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
