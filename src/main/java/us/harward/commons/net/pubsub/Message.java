@@ -86,8 +86,22 @@ abstract class Message {
             buffer.writeLong(0l);
             buffer.writeLong(0l);
         }
+        if (serverID != null) {
+            buffer.writeLong(serverID.getMostSignificantBits());
+            buffer.writeLong(serverID.getLeastSignificantBits());
+        } else {
+            buffer.writeLong(0l);
+            buffer.writeLong(0l);
+        }
         buffer.writeInt(bodyBuffer.readableBytes());
         buffer.writeBytes(bodyBuffer);
+    }
+
+    final int headerSize() {
+        return 4 // Type
+        + 8 // Source ID
+        + 8 // Server ID
+        + 4; // Body length
     }
 
     abstract int estimatedBodySize();
