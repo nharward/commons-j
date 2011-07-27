@@ -56,7 +56,7 @@ final class MessageCodec {
         protected Object encode(final ChannelHandlerContext ctx, final Channel channel, final Object msg) throws Exception {
             if (msg instanceof Message) {
                 final Message m = (Message) msg;
-                final ChannelBuffer rv = ChannelBuffers.dynamicBuffer(8 + m.estimatedBodySize());
+                final ChannelBuffer rv = ChannelBuffers.dynamicBuffer(m.headerSize() + m.estimatedBodySize());
                 m.marshall(rv);
                 return ChannelBuffers.unmodifiableBuffer(rv);
             } else

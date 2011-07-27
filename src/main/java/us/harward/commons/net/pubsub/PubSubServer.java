@@ -60,6 +60,7 @@ public final class PubSubServer {
         final ServerMessageHandler sharedMessageHandler = new ServerMessageHandler();
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 
+            @Override
             public ChannelPipeline getPipeline() {
                 return Channels.pipeline(MessageCodec.decoder(), MessageCodec.encoder(), sharedMessageHandler);
             }
