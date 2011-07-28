@@ -19,23 +19,18 @@ package us.harward.commons.net.pubsub;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.netty.buffer.ChannelBuffers;
-
-import us.harward.commons.net.pubsub.PubSubClient;
-import us.harward.commons.net.pubsub.PubSubServer;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
@@ -49,15 +44,16 @@ public final class Megaphone implements PubSubClient.NetworkConnectionLifecycleC
     private final Lock               lock;
     private final Condition          condition;
 
-    Megaphone(final String... topics) throws Exception {
+    Megaphone(final Collection<InetSocketAddress> servers, final Collection<String> topics) throws Exception {
+        Preconditions.checkNotNull(servers);
+        Preconditions.checkArgument(!servers.isEmpty());
         Preconditions.checkNotNull(topics);
-        Preconditions.checkArgument(topics.length > 0);
+        Preconditions.checkArgument(!topics.isEmpty());
         lock = new ReentrantLock();
         condition = lock.newCondition();
         connected = new AtomicBoolean(false);
         this.topics = new LinkedList<String>();
-        client = new PubSubClient(Executors.newCachedThreadPool(), this, 5, TimeUnit.SECONDS, new InetSocketAddress(
-                InetAddress.getLocalHost(), PubSubServer.DEFAULT_ADDRESS.getPort()));
+        client = new PubSubClient(Executors.newCachedThreadPool(), this, servers);
         for (final String topic : topics) {
             this.topics.add(topic);
             client.subscribe(topic, new MessagePrinter(topic));
@@ -115,7 +111,12 @@ public final class Megaphone implements PubSubClient.NetworkConnectionLifecycleC
     }
 
     public static void main(final String... args) throws Throwable {
-        new Megaphone(args).repl();
+        Preconditions.checkArgument(args.length > 1);
+        final Collection<InetSocketAddress> servers = PubSubServer.hostPortPairsFromString(args[0]);
+        final Collection<String> topics = new LinkedList<String>();
+        for (int pos = 1; pos < args.length; ++pos)
+            topics.add(args[pos]);
+        new Megaphone(servers, topics).repl();
     }
 
     private static final class MessagePrinter implements PubSubClient.MessageCallback {

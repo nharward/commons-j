@@ -17,8 +17,15 @@
 
 package us.harward.commons.net.pubsub;
 
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -26,39 +33,69 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 
 @Sharable
-final class ServerMessageHandler extends SimpleChannelHandler {
+final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
+
+    private static final Logger                    logger = LoggerFactory.getLogger(ServerMessageHandler.class);
 
     private final Map<String, DefaultChannelGroup> subscribers;
     private final Lock                             lock;
+    private final ExecutorService                  service;
+    private final Collection<PubSubClient>         remoteServers;
 
-    ServerMessageHandler() {
+    ServerMessageHandler(final Predicate<Object> serverToServerFilter, final Collection<InetSocketAddress> remoteServers) {
+        Preconditions.checkNotNull(serverToServerFilter);
+        Preconditions.checkNotNull(remoteServers);
         subscribers = new ConcurrentHashMap<String, DefaultChannelGroup>();
         lock = new ReentrantLock();
+        this.remoteServers = new LinkedList<PubSubClient>();
+        service = Executors.newCachedThreadPool();
+        for (final InetSocketAddress remote : remoteServers)
+            this.remoteServers.add(new PubSubClient(this, serverToServerFilter, service, null,
+                    PubSubClient.DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS, Collections.nCopies(1, remote)));
+    }
+
+    void start() {
+        for (final PubSubClient remote : remoteServers)
+            remote.start();
+    }
+
+    void stop() {
+        for (final PubSubClient remote : remoteServers)
+            try {
+                remote.stop();
+            } catch (final InterruptedException ie) {
+                logger.warn("Caught exception while stopping server-to-server connection", ie);
+            }
+        service.shutdownNow();
     }
 
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
         final Object o = e.getMessage();
         if (o instanceof ApplicationMessage)
-            handleApplicationMessage(ctx, (ApplicationMessage) o);
+            handleApplicationMessage(ctx.getChannel(), (ApplicationMessage) o);
         else if (o instanceof SubscriptionMessage)
-            handleSubscriptionRequest(ctx, (SubscriptionMessage) o);
+            handleSubscriptionRequest(ctx.getChannel(), (SubscriptionMessage) o);
         else
             super.messageReceived(ctx, e);
     }
 
     /*
-     * Broadcast this incoming application message to all subscribers of the topic (except for the client who sent it)
+     * Broadcast this incoming application message to all subscribers of the topic (except for the one who broadcast it)
      */
-    private void handleApplicationMessage(final ChannelHandlerContext ctx, final ApplicationMessage msg) {
+    private void handleApplicationMessage(final Channel source, final ApplicationMessage msg) {
         final DefaultChannelGroup group = subscribers.get(msg.topic);
         if (group != null) {
-            final Channel source = ctx.getChannel();
             final Iterator<Channel> pos = group.iterator();
             while (pos.hasNext()) {
                 final Channel channel = pos.next();
@@ -68,11 +105,11 @@ final class ServerMessageHandler extends SimpleChannelHandler {
         }
     }
 
-    private void handleSubscriptionRequest(final ChannelHandlerContext ctx, final SubscriptionMessage msg) {
+    private void handleSubscriptionRequest(final Channel channel, final SubscriptionMessage msg) {
         if (msg.subscribe)
-            subscribe(ctx.getChannel(), msg.topics);
+            subscribe(channel, msg.topics);
         else
-            unsubscribe(ctx.getChannel(), msg.topics);
+            unsubscribe(channel, msg.topics);
     }
 
     private void subscribe(final Channel channel, final String... topics) {
