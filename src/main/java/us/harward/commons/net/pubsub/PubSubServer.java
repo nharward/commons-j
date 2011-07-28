@@ -21,19 +21,26 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.ChannelDownstreamHandler;
 import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelDownstreamHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Predicate;
 
 public final class PubSubServer {
 
@@ -46,9 +53,11 @@ public final class PubSubServer {
     private final ServerBootstrap               bootstrap;
     private final ChannelGroup                  openChannels;
 
-    public PubSubServer(final InetSocketAddress... listenAddresses) {
+    private final ServerMessageHandler          sharedMessageHandler;
+
+    public PubSubServer(final Collection<InetSocketAddress> listenAddresses, final Collection<InetSocketAddress> otherServers) {
         final Collection<InetSocketAddress> laddrs = new LinkedList<InetSocketAddress>();
-        if (listenAddresses != null && listenAddresses.length > 0)
+        if (listenAddresses != null && !listenAddresses.isEmpty())
             for (final InetSocketAddress address : listenAddresses)
                 laddrs.add(address);
         else
@@ -57,12 +66,35 @@ public final class PubSubServer {
         openChannels = new DefaultChannelGroup(getClass().getName());
         factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
         bootstrap = new ServerBootstrap(factory);
-        final ServerMessageHandler sharedMessageHandler = new ServerMessageHandler();
+        final UUID ourServerID = UUID.randomUUID();
+        sharedMessageHandler = new ServerMessageHandler(new Predicate<Object>() {
+
+            @Override
+            public boolean apply(final Object o) {
+                return (o instanceof ApplicationMessage) ? !((ApplicationMessage) o).serverID().equals(ourServerID) : true;
+            }
+
+        }, otherServers);
+        final ChannelDownstreamHandler uuidPopulatingHandler = new SimpleChannelDownstreamHandler() {
+
+            @Override
+            public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+                final Object o = e.getMessage();
+                if (o instanceof Message) {
+                    final Message m = (Message) o;
+                    if (m.serverID() == null || m.serverID().equals(Message.NO_UUID))
+                        m.serverID(ourServerID);
+                }
+                super.writeRequested(ctx, e);
+            }
+
+        };
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 
             @Override
             public ChannelPipeline getPipeline() {
-                return Channels.pipeline(MessageCodec.decoder(), MessageCodec.encoder(), sharedMessageHandler);
+                return Channels.pipeline(MessageCodec.decoder(), MessageCodec.encoder(), uuidPopulatingHandler,
+                        sharedMessageHandler);
             }
 
         });
@@ -71,6 +103,7 @@ public final class PubSubServer {
     }
 
     public void start() {
+        sharedMessageHandler.start();
         for (final InetSocketAddress address : listenAddresses) {
             logger.info("Starting listener on {}", address);
             openChannels.add(bootstrap.bind(address));
@@ -80,6 +113,7 @@ public final class PubSubServer {
 
     public void stop() throws InterruptedException {
         logger.info("Server shutting down...");
+        sharedMessageHandler.stop();
         final ChannelGroupFuture future = openChannels.close();
         try {
             future.await();
@@ -96,20 +130,11 @@ public final class PubSubServer {
      *             if unable to parse command line arguments as host:port pairs
      */
     public static void main(final String[] args) throws Throwable {
-        final InetSocketAddress[] listenAddrs = new InetSocketAddress[args.length];
-        for (int pos = 0; pos < args.length; ++pos) {
-            try {
-                final String[] host_port = args[pos].split(":");
-                if (host_port == null || host_port.length != 2)
-                    throw new Exception("Expected host:port pair, got '" + args[pos] + "' instead");
-                listenAddrs[pos] = new InetSocketAddress(host_port[0], Integer.parseInt(host_port[1]));
-            } catch (final Throwable t) {
-                System.err.println("Unable to process argument " + (pos + 1) + " '" + args[pos] + "' as a host:port pair");
-                t.printStackTrace(System.err);
-                throw t;
-            }
-        }
-        final PubSubServer pss = new PubSubServer(listenAddrs);
+        final Collection<InetSocketAddress> listenAddrs = args.length > 0 ? hostPortPairsFromString(args[0])
+                : new LinkedList<InetSocketAddress>();
+        final Collection<InetSocketAddress> remoteAddrs = args.length > 1 ? hostPortPairsFromString(args[1])
+                : new LinkedList<InetSocketAddress>();
+        final PubSubServer pss = new PubSubServer(listenAddrs, remoteAddrs);
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 
             @Override
@@ -123,6 +148,21 @@ public final class PubSubServer {
 
         }));
         pss.start();
+    }
+
+    static Collection<InetSocketAddress> hostPortPairsFromString(final String s) {
+        final Collection<InetSocketAddress> rv = new LinkedList<InetSocketAddress>();
+        if (s != null && s.trim().length() > 0) {
+            for (final String pair : s.split(",")) {
+                final String[] parts = pair.split(":");
+                if (parts.length > 0) {
+                    final String host = parts[0];
+                    final int port = parts.length > 1 ? Integer.parseInt(parts[1]) : DEFAULT_ADDRESS.getPort();
+                    rv.add(new InetSocketAddress(host, port));
+                }
+            }
+        }
+        return rv;
     }
 
 }

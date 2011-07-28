@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -68,16 +69,17 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     private final AtomicReference<InetSocketAddress>              currentRemoteAddress;
 
     RoundRobinReconnectHandler(final ClientBootstrap bootstrap, final int retryDelay, final TimeUnit retryUnits,
-            final PubSubClient.NetworkConnectionLifecycleCallback callback, final InetSocketAddress... servers) {
+            final PubSubClient.NetworkConnectionLifecycleCallback callback, final Collection<InetSocketAddress> servers) {
         Preconditions.checkNotNull(bootstrap);
         Preconditions.checkNotNull(servers);
+        Preconditions.checkArgument(!servers.isEmpty());
         Preconditions.checkArgument(retryDelay > 0);
         Preconditions.checkNotNull(retryUnits);
         this.bootstrap = bootstrap;
         this.callback = callback;
         this.retryDelay = retryDelay;
         this.retryUnits = retryUnits;
-        availableServers = new ArrayList<InetSocketAddress>(servers.length);
+        availableServers = new ArrayList<InetSocketAddress>(servers.size());
         failedServers = new LinkedList<InetSocketAddress>();
         for (final InetSocketAddress isa : servers)
             if (isa != null)
@@ -115,7 +117,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
         currentChannel.set(null);
         final SocketAddress remote = e.getChannel().getRemoteAddress();
-        logger.debug("Disconnected from server: {}", remote);
+        logger.info("Disconnected from server: {}", remote);
         if (callback != null)
             callback.connectionDown(remote);
         super.channelDisconnected(ctx, e);
@@ -146,7 +148,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
         currentChannel.set(e.getChannel());
         final SocketAddress remote = e.getChannel().getRemoteAddress();
         currentRemoteAddress.set((InetSocketAddress) remote);
-        logger.debug("Established connection to server {}", remote);
+        logger.info("Established connection to server {}", remote);
         if (callback != null)
             callback.connectionUp(remote);
         super.channelConnected(ctx, e);

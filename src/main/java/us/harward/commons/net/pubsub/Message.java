@@ -51,12 +51,16 @@ abstract class Message {
 
     }
 
-    final Type   type;
-    private UUID sourceID;
-    private UUID serverID;
+    final static UUID NO_UUID = new UUID(0l, 0l);
+
+    final Type        type;
+    private UUID      sourceID;
+    private UUID      serverID;
 
     protected Message(final Type type) {
         this.type = type;
+        sourceID = NO_UUID;
+        serverID = NO_UUID;
     }
 
     void sourceID(final UUID sourceID) {
@@ -83,15 +87,15 @@ abstract class Message {
             buffer.writeLong(sourceID.getMostSignificantBits());
             buffer.writeLong(sourceID.getLeastSignificantBits());
         } else {
-            buffer.writeLong(0l);
-            buffer.writeLong(0l);
+            buffer.writeLong(NO_UUID.getMostSignificantBits());
+            buffer.writeLong(NO_UUID.getLeastSignificantBits());
         }
         if (serverID != null) {
             buffer.writeLong(serverID.getMostSignificantBits());
             buffer.writeLong(serverID.getLeastSignificantBits());
         } else {
-            buffer.writeLong(0l);
-            buffer.writeLong(0l);
+            buffer.writeLong(NO_UUID.getMostSignificantBits());
+            buffer.writeLong(NO_UUID.getLeastSignificantBits());
         }
         buffer.writeInt(bodyBuffer.readableBytes());
         buffer.writeBytes(bodyBuffer);
@@ -99,8 +103,8 @@ abstract class Message {
 
     final int headerSize() {
         return 4 // Type
-        + 8 // Source ID
-        + 8 // Server ID
+        + 16 // Source ID
+        + 16 // Server ID
         + 4; // Body length
     }
 
@@ -122,8 +126,8 @@ abstract class Message {
 
         Builder() {
             type = ChannelBuffers.buffer(4);
-            sourceID = ChannelBuffers.buffer(8);
-            serverID = ChannelBuffers.buffer(8);
+            sourceID = ChannelBuffers.buffer(16);
+            serverID = ChannelBuffers.buffer(16);
             length = ChannelBuffers.buffer(4);
             body = null;
         }
@@ -162,6 +166,8 @@ abstract class Message {
                 message.sourceID(new UUID(sourceID.readLong(), sourceID.readLong()));
                 message.serverID(new UUID(serverID.readLong(), serverID.readLong()));
                 type.clear();
+                sourceID.clear();
+                serverID.clear();
                 length.clear();
                 body = null;
             } else
