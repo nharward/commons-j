@@ -19,6 +19,7 @@ package us.harward.commons.util;
 
 import static us.harward.commons.util.Equals.allowNull;
 import static us.harward.commons.util.Equals.disallowNull;
+import junit.framework.Assert;
 
 import org.junit.Test;
 
@@ -26,20 +27,20 @@ public class EqualsTest {
 
     @Test
     public final void testAllowNull() {
-        assert allowNull(null, null);
-        assert allowNull("Testing", "Testing");
-        assert !allowNull("Testing", "NotEqual");
-        assert !allowNull(null, "Testing");
-        assert !allowNull("Testing", null);
+        Assert.assertTrue(allowNull(null, null));
+        Assert.assertTrue(allowNull("Testing", "Testing"));
+        Assert.assertFalse(allowNull("Testing", "NotEqual"));
+        Assert.assertFalse(allowNull(null, "Testing"));
+        Assert.assertFalse(allowNull("Testing", null));
     }
 
     @Test
     public final void testDisallowNull() {
-        assert !disallowNull(null, null);
-        assert disallowNull("Testing", "Testing");
-        assert !disallowNull("Testing", "NotEqual");
-        assert !disallowNull(null, "Testing");
-        assert !disallowNull("Testing", null);
+        Assert.assertFalse(disallowNull(null, null));
+        Assert.assertTrue( disallowNull("Testing", "Testing"));
+        Assert.assertFalse(disallowNull("Testing", "NotEqual"));
+        Assert.assertFalse(disallowNull(null, "Testing"));
+        Assert.assertFalse(disallowNull("Testing", null));
     }
 
 }

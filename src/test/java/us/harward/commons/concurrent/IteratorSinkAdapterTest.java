@@ -24,6 +24,8 @@ import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
+import junit.framework.Assert;
+
 import org.junit.Test;
 
 public class IteratorSinkAdapterTest {
@@ -80,17 +82,17 @@ public class IteratorSinkAdapterTest {
         int numObjectsRead = 0;
         while (isa.hasNext()) {
             final Object o = isa.next();
-            assert o == filler;
+            Assert.assertSame(filler, o);
             ++numObjectsRead;
         }
-        assert numObjectsRead == numObjectsToFillPerThread * numThreads;
+        Assert.assertEquals(numObjectsRead, numObjectsToFillPerThread * numThreads);
     }
 
     @Test(expected = ConcurrentModificationException.class)
     public final void finish() {
         final IteratorSinkAdapter<Object> isa = new IteratorSinkAdapter<Object>(1);
         isa.finish();
-        assert !isa.hasNext();
+        Assert.assertFalse(isa.hasNext());
         isa.drop(this);
     }
 
@@ -98,7 +100,7 @@ public class IteratorSinkAdapterTest {
     public final void empty() {
         final IteratorSinkAdapter<Object> isa = new IteratorSinkAdapter<Object>(1);
         isa.finish();
-        assert !isa.hasNext();
+        Assert.assertFalse(isa.hasNext());
         isa.next();
     }
 
@@ -106,11 +108,11 @@ public class IteratorSinkAdapterTest {
     public final void idempotence() {
         final IteratorSinkAdapter<Object> isa = new IteratorSinkAdapter<Object>(1);
         isa.finish();
-        assert !isa.hasNext();
+        Assert.assertFalse(isa.hasNext());
         for (int pos = 0; pos < 1000; ++pos) {
-            assert !isa.hasNext();
+            Assert.assertFalse(isa.hasNext());
             isa.finish();
-            assert !isa.hasNext();
+            Assert.assertFalse(isa.hasNext());
         }
     }
 

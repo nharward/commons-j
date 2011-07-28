@@ -21,6 +21,8 @@ import javax.xml.bind.JAXBException;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLStreamException;
 
+import junit.framework.Assert;
+
 import org.junit.Test;
 
 import us.harward.commons.xml.XMLTestBase;
@@ -35,17 +37,17 @@ public class SAXBPParserTest extends XMLTestBase {
     @Test
     public final void basicJAXBParse() throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
         final JAXBContactListHandler handler = new JAXBContactListHandler();
-        assert handler.getContactLists().isEmpty();
+        Assert.assertTrue(handler.getContactLists().isEmpty());
         new SAXBPParser().parse(rolodexXml(), rolodexContext(), handler);
-        assert handler.getContactLists().size() == 1;
+        Assert.assertEquals(1, handler.getContactLists().size());
     }
 
     @Test
     public final void basicStAXParse() throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
         final StAXContactListHandler handler = new StAXContactListHandler();
-        assert handler.getContactListEvents().isEmpty();
+        Assert.assertTrue(handler.getContactListEvents().isEmpty());
         new SAXBPParser().parse(rolodexXml(), null, handler);
-        assert handler.getContactListEvents().size() == 1;
+        Assert.assertEquals(1, handler.getContactListEvents().size());
     }
 
     @Test
@@ -55,19 +57,19 @@ public class SAXBPParserTest extends XMLTestBase {
         final JAXBAddressTypeHandler atHandler = new JAXBAddressTypeHandler();
         final DocumentHandler dHandler = new DocumentHandler();
 
-        assert clHandler.getContactListEvents().isEmpty();
-        assert pHandler.getPeople().isEmpty();
-        assert atHandler.getAddresses().isEmpty();
-        assert !dHandler.started();
-        assert !dHandler.ended();
+        Assert.assertTrue(clHandler.getContactListEvents().isEmpty());
+        Assert.assertTrue(pHandler.getPeople().isEmpty());
+        Assert.assertTrue(atHandler.getAddresses().isEmpty());
+        Assert.assertFalse(dHandler.started());
+        Assert.assertFalse(dHandler.ended());
 
         new SAXBPParser().parse(rolodexXml(), rolodexContext(), clHandler, pHandler, atHandler, dHandler);
 
-        assert clHandler.getContactListEvents().size() == 1;
-        assert pHandler.getPeople().size() == 2;
-        assert atHandler.getAddresses().size() == 4;
-        assert dHandler.started();
-        assert dHandler.ended();
+        Assert.assertEquals(1, clHandler.getContactListEvents().size());
+        Assert.assertEquals(2, pHandler.getPeople().size());
+        Assert.assertEquals(4, atHandler.getAddresses().size());
+        Assert.assertTrue(dHandler.started());
+        Assert.assertTrue(dHandler.ended());
     }
 
 }
