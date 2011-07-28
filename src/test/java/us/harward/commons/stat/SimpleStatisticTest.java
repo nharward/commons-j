@@ -20,6 +20,8 @@ package us.harward.commons.stat;
 import java.security.SecureRandom;
 import java.util.Random;
 
+import junit.framework.Assert;
+
 import org.junit.Test;
 
 public class SimpleStatisticTest {
@@ -27,25 +29,14 @@ public class SimpleStatisticTest {
     @Test
     public final void testSimpleStatistic() {
         final SimpleStatistic stat = new SimpleStatistic();
-        assert stat.name() != null : "Default constructor causes null name";
-        assert stat.sampleCount() == 0 : "Sample count != 0 -> " + stat.sampleCount();
-        assert stat.minimum() == 0 : "Minimum != 0 -> " + stat.minimum();
-        assert stat.maximum() == 0 : "Maximum != 0 -> " + stat.maximum();
-        assert stat.sum() == 0 : "Sum != 0 -> " + stat.sum();
-        assert stat.average() == 0 : "Average != 0 -> " + stat.average();
+        checkStat(stat, "Unnamed", 0, 0, 0, 0, 0);
     }
 
     @Test
     public final void testSimpleStatisticString() {
         final String name = "Some string" + System.currentTimeMillis();
         final SimpleStatistic stat = new SimpleStatistic(name);
-        assert stat.name() != null : "Named constructor causes null name";
-        assert name.equals(stat.name()) : "Named constructor changes name";
-        assert stat.sampleCount() == 0 : "Sample count != 0 -> " + stat.sampleCount();
-        assert stat.minimum() == 0 : "Minimum != 0 -> " + stat.minimum();
-        assert stat.maximum() == 0 : "Maximum != 0 -> " + stat.maximum();
-        assert stat.sum() == 0 : "Sum != 0 -> " + stat.sum();
-        assert stat.average() == 0 : "Average != 0 -> " + stat.average();
+        checkStat(stat, name, 0, 0, 0, 0, 0);
     }
 
     @Test
@@ -54,19 +45,12 @@ public class SimpleStatisticTest {
         stat.addSample(0);
         stat.addSample(1);
         stat.addSample(-1);
-        assert stat.sampleCount() == 3 : "Sample count != 3 -> " + stat.sampleCount();
-        assert stat.minimum() == -1 : "Minimum != -1 -> " + stat.minimum();
-        assert stat.maximum() == 1 : "Maximum != 1 -> " + stat.maximum();
-        assert stat.sum() == 0 : "Sum != 0 -> " + stat.sum();
-        assert stat.average() == 0 : "Average != 0 -> " + stat.average();
+        checkStat(stat, "Unnamed", 3, -1, 1, 0, 0);
+
         stat.addSample(0);
         stat.addSample(1000);
         stat.addSample(-1000);
-        assert stat.sampleCount() == 6 : "Sample count != 6 -> " + stat.sampleCount();
-        assert stat.minimum() == -1000 : "Minimum != -1 -> " + stat.minimum();
-        assert stat.maximum() == 1000 : "Maximum != 1 -> " + stat.maximum();
-        assert stat.sum() == 0 : "Sum != 0 -> " + stat.sum();
-        assert stat.average() == 0 : "Average != 0 -> " + stat.average();
+        checkStat(stat, "Unnamed", 6, -1000, 1000, 0, 0);
     }
 
     @Test
@@ -76,7 +60,7 @@ public class SimpleStatisticTest {
             final int samples = new SecureRandom().nextInt(10000);
             for (int pos2 = 0; pos2 < samples; ++pos2)
                 stat.addSample(pos2);
-            assert stat.sampleCount() == samples : "Sample count != " + samples + " -> " + stat.sampleCount();
+            Assert.assertEquals(samples, stat.sampleCount());
         }
     }
 
@@ -91,7 +75,7 @@ public class SimpleStatisticTest {
             if (newValue < expected)
                 expected = newValue;
         }
-        assert stat.minimum() == expected : "Minimum != " + expected + " -> " + stat.minimum();
+        Assert.assertEquals(expected, stat.minimum());
     }
 
     @Test
@@ -105,7 +89,7 @@ public class SimpleStatisticTest {
             if (newValue > expected)
                 expected = newValue;
         }
-        assert stat.maximum() == expected : "Maximum != " + expected + " -> " + stat.maximum();
+        Assert.assertEquals(expected, stat.maximum());
     }
 
     @Test
@@ -118,7 +102,7 @@ public class SimpleStatisticTest {
             stat.addSample(newValue);
             expected += newValue;
         }
-        assert stat.sum() == expected : "Sum != " + expected + " -> " + stat.sum();
+        Assert.assertEquals(expected, stat.sum());
     }
 
     @Test
@@ -132,7 +116,16 @@ public class SimpleStatisticTest {
             expected += newValue;
         }
         expected /= 10000;
-        assert stat.average() == expected : "Average != " + expected + " -> " + stat.average();
+        Assert.assertEquals(expected, stat.average());
     }
 
+    private static void checkStat(final SimpleStatistic stat, final String name, long expectedCnt, long expectedMin, long expectedMax, long expectedSum, long expectedAvg) {
+        Assert.assertNotNull("Named constructor causes null name", stat.name());
+        Assert.assertEquals("Named constructor changes name", name, stat.name());
+        Assert.assertEquals("Sample count != 0 -> " + stat.sampleCount(), expectedCnt, stat.sampleCount());
+        Assert.assertEquals("Minimum != 0 -> " + stat.minimum(), expectedMin, stat.minimum());
+        Assert.assertEquals("Maximum != 0 -> " + stat.maximum(), expectedMax, stat.maximum());
+        Assert.assertEquals("Sum != 0 -> " + stat.sum(), expectedSum, stat.sum());
+        Assert.assertEquals("Average != 0 -> " + stat.average(), expectedAvg, stat.average());
+    }
 }
