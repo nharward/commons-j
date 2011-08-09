@@ -61,16 +61,20 @@ final class ClientMessageHandler extends SimpleChannelHandler {
     }
 
     void subscribe(final String topic, final PubSubClient.MessageCallback... callbacks) {
+        logger.trace("Subscribing {} callbacks to topic[{}]", callbacks.length, topic);
         lock.lock();
         try {
             final Collection<PubSubClient.MessageCallback> group;
             if (subscribers.containsKey(topic)) {
                 group = subscribers.get(topic);
+                logger.trace("Found {} existing subscribers for topic[{}]: ", group.size(), topic);
             } else {
+                logger.trace("Creating new subscriber group for topic[{}]");
                 group = new CopyOnWriteArrayList<PubSubClient.MessageCallback>();
                 subscribers.put(topic, group);
                 final Channel channel = activeChannel.get();
                 if (channel != null) {
+                    logger.trace("Writing new subscriber group for topic[{}]");
                     channel.write(new SubscriptionMessage(true, topic));
                 }
             }
@@ -110,12 +114,14 @@ final class ClientMessageHandler extends SimpleChannelHandler {
         final String[] topics = new String[al.size()];
         al.toArray(topics);
         e.getChannel().write(new SubscriptionMessage(true, topics));
+        logger.trace("Channel connected and active channel set; subscribed to topics {}", al);
         super.channelConnected(ctx, e);
     }
 
     @Override
     public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
         activeChannel.set(null);
+        logger.trace("Channel disconnected - active channel unset");
         super.channelDisconnected(ctx, e);
     }
 
@@ -123,6 +129,7 @@ final class ClientMessageHandler extends SimpleChannelHandler {
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
         final Object o = e.getMessage();
         if (o instanceof ApplicationMessage) {
+            logger.trace("Received application message - routing to handleApplicationMessage(...)");
             handleApplicationMessage(ctx, (ApplicationMessage) o);
         } else
             super.messageReceived(ctx, e);
@@ -132,6 +139,8 @@ final class ClientMessageHandler extends SimpleChannelHandler {
         final Collection<PubSubClient.MessageCallback> callbacks = subscribers.get(msg.topic);
         if (callbacks != null && !callbacks.isEmpty()) {
             final ByteBuffer appMsg = msg.applicationBody();
+            logger.trace("Incoming application message {} bytes long being asynchronously sent to {} application callbacks",
+                    appMsg.remaining(), callbacks.size());
             for (final PubSubClient.MessageCallback callback : callbacks)
                 callbackService.submit(new CallbackInvoker(callback, appMsg.asReadOnlyBuffer()));
         }
@@ -150,9 +159,11 @@ final class ClientMessageHandler extends SimpleChannelHandler {
         @Override
         public void run() {
             try {
+                logger.trace("Invoking callback[{}] with message of length {}", callback, message.remaining());
                 callback.onMessage(message);
+                logger.trace("Callback[{}] finished processing the message", callback);
             } catch (final Exception e) {
-                logger.error("Caught exception during message callback on " + callback, e);
+                logger.warn("Caught exception during message callback[" + callback + "]", e);
             }
         }
 
