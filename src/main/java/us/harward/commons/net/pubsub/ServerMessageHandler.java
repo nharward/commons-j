@@ -18,6 +18,7 @@
 package us.harward.commons.net.pubsub;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -62,21 +63,27 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
         for (final InetSocketAddress remote : remoteServers)
             this.remoteServers.add(new PubSubClient(this, serverToServerFilter, service, null,
                     PubSubClient.DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS, Collections.nCopies(1, remote)));
+        logger.trace("Will connect to the following remote servers: {}", remoteServers);
     }
 
     void start() {
+        logger.trace("start() called, firing up pub/sub remotes");
         for (final PubSubClient remote : remoteServers)
             remote.start();
+        logger.trace("start() finished");
     }
 
     void stop() {
+        logger.trace("stop() called, stopping remote connections");
         for (final PubSubClient remote : remoteServers)
             try {
                 remote.stop();
             } catch (final InterruptedException ie) {
                 logger.warn("Caught exception while stopping server-to-server connection", ie);
             }
+        logger.trace("stopping executor service");
         service.shutdownNow();
+        logger.trace("stop() finished");
     }
 
     @Override
@@ -95,14 +102,19 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
      */
     private void handleApplicationMessage(final Channel source, final ApplicationMessage msg) {
         final DefaultChannelGroup group = subscribers.get(msg.topic);
+        logger.trace("Incoming application message on topic[{}] from remote {}, channel broadcast group is: {}", new Object[] {
+                msg.topic, source.getRemoteAddress(), group });
         if (group != null) {
             final Iterator<Channel> pos = group.iterator();
             while (pos.hasNext()) {
                 final Channel channel = pos.next();
-                if (channel.getId() != source.getId())
+                if (channel.getId() != source.getId()) {
+                    logger.trace("Broadcasting message to channel[{}]", channel.getRemoteAddress());
                     channel.write(msg);
+                }
             }
         }
+        logger.trace("Application message finished broadcasting");
     }
 
     private void handleSubscriptionRequest(final Channel channel, final SubscriptionMessage msg) {
@@ -113,6 +125,8 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
     }
 
     private void subscribe(final Channel channel, final String... topics) {
+        logger.trace("Subscription message on channel[{}] for topics: [{}]",
+                new Object[] { channel.getRemoteAddress(), Arrays.toString(topics) });
         for (final String topic : topics) {
             lock.lock();
             try {
@@ -122,28 +136,36 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
                 else {
                     group = new DefaultChannelGroup(topic);
                     subscribers.put(topic, group);
+                    logger.trace("Creating new subscriber group for topic[{}]", topic);
                 }
+                logger.trace("Subscribing channel[{}] to topic[{}]", new Object[] { channel.getRemoteAddress(), topic });
                 group.add(channel);
             } finally {
                 lock.unlock();
             }
         }
+        logger.trace("Subscription message finished processing");
     }
 
     private void unsubscribe(final Channel channel, final String... topics) {
+        logger.trace("[un]Subscription message for channel[{}] on topics[{}]",
+                new Object[] { channel.getRemoteAddress(), Arrays.toString(topics) });
         for (final String topic : topics) {
             lock.lock();
             try {
                 final DefaultChannelGroup group = subscribers.get(topic);
                 if (group != null) {
                     group.remove(channel);
-                    if (group.isEmpty())
+                    if (group.isEmpty()) {
+                        logger.trace("Removing empty subscriber group for topic[{}]", topic);
                         subscribers.remove(topic);
+                    }
                 }
             } finally {
                 lock.unlock();
             }
         }
+        logger.trace("[un]Subscription message finished processing");
     }
 
 }
