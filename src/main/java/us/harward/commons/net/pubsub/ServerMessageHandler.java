@@ -143,6 +143,9 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
             } finally {
                 lock.unlock();
             }
+            logger.trace("Subscribing topic[{}] on remote servers to receive forwarded messages", topic);
+            for (final PubSubClient remote : remoteServers)
+                remote.subscribe(topic);
         }
         logger.trace("Subscription message finished processing");
     }
@@ -164,6 +167,9 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
             } finally {
                 lock.unlock();
             }
+            logger.trace("Un-subscribing frmo topic[{}] on remote servers to stop receiving forwarded messages", topic);
+            for (final PubSubClient remote : remoteServers)
+                remote.unsubscribe(topic);
         }
         logger.trace("[un]Subscription message finished processing");
     }
