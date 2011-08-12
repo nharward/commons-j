@@ -17,6 +17,8 @@
 
 package us.harward.commons.net.pubsub;
 
+import static us.harward.commons.util.Conversions.asArray;
+
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,23 +69,18 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
     }
 
     void start() {
-        logger.trace("start() called, firing up pub/sub remotes");
         for (final PubSubClient remote : remoteServers)
             remote.start();
-        logger.trace("start() finished");
     }
 
     void stop() {
-        logger.trace("stop() called, stopping remote connections");
         for (final PubSubClient remote : remoteServers)
             try {
                 remote.stop();
             } catch (final InterruptedException ie) {
                 logger.warn("Caught exception while stopping server-to-server connection", ie);
             }
-        logger.trace("stopping executor service");
         service.shutdownNow();
-        logger.trace("stop() finished");
     }
 
     @Override
@@ -102,8 +99,8 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
      */
     private void handleApplicationMessage(final Channel source, final ApplicationMessage msg) {
         final DefaultChannelGroup group = subscribers.get(msg.topic);
-        logger.trace("Incoming application message on topic[{}] from remote {}, channel broadcast group is: {}", new Object[] {
-                msg.topic, source.getRemoteAddress(), group });
+        logger.trace("Incoming application message on topic[{}] from remote {}, channel broadcast group is: {}",
+                asArray(msg.topic, source.getRemoteAddress(), group));
         if (group != null) {
             final Iterator<Channel> pos = group.iterator();
             while (pos.hasNext()) {
@@ -126,7 +123,7 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
 
     private void subscribe(final Channel channel, final String... topics) {
         logger.trace("Subscription message on channel[{}] for topics: [{}]",
-                new Object[] { channel.getRemoteAddress(), Arrays.toString(topics) });
+                asArray(channel.getRemoteAddress(), Arrays.toString(topics)));
         for (final String topic : topics) {
             lock.lock();
             try {
@@ -138,7 +135,7 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
                     subscribers.put(topic, group);
                     logger.trace("Creating new subscriber group for topic[{}]", topic);
                 }
-                logger.trace("Subscribing channel[{}] to topic[{}]", new Object[] { channel.getRemoteAddress(), topic });
+                logger.trace("Subscribing channel[{}] to topic[{}]", asArray(channel.getRemoteAddress(), topic));
                 group.add(channel);
             } finally {
                 lock.unlock();
