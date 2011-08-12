@@ -117,7 +117,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
         currentChannel.set(null);
         final SocketAddress remote = e.getChannel().getRemoteAddress();
-        logger.info("Disconnected from server: {}", remote);
+        logger.debug("Disconnected from server: {}", remote);
         if (callback != null)
             callback.connectionDown(remote);
         super.channelDisconnected(ctx, e);
@@ -148,7 +148,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
         currentChannel.set(e.getChannel());
         final SocketAddress remote = e.getChannel().getRemoteAddress();
         currentRemoteAddress.set((InetSocketAddress) remote);
-        logger.info("Established connection to server {}", remote);
+        logger.debug("Established connection to server {}", remote);
         if (callback != null)
             callback.connectionUp(remote);
         super.channelConnected(ctx, e);
@@ -169,7 +169,7 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
             lock.lock();
             try {
                 if (availableServers.isEmpty()) {
-                    logger.info("No servers are available, will re-try in [{}/{}]", retryDelay, retryUnits);
+                    logger.warn("No servers are available, will re-try in [{}/{}]", retryDelay, retryUnits);
                     timer.newTimeout(new TimerTask() {
 
                         @Override

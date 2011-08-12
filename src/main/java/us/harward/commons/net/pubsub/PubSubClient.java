@@ -17,6 +17,8 @@
 
 package us.harward.commons.net.pubsub;
 
+import static us.harward.commons.util.Conversions.asArray;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -34,6 +36,8 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import us.harward.commons.net.netty.UpstreamMessageFilteringHandler;
 
@@ -62,6 +66,8 @@ public final class PubSubClient {
         void connectionDown(final SocketAddress endpoint);
 
     }
+
+    private static final Logger              logger                  = LoggerFactory.getLogger(PubSubClient.class);
 
     public static final int                  DEFAULT_TIMEOUT_SECONDS = 5;
 
@@ -117,23 +123,30 @@ public final class PubSubClient {
         });
         bootstrap.setOption("tcpNoDelay", true);
         bootstrap.setOption("keepAlive", true);
+        logger.trace(
+                "New pub/sub client created w/ intercepting handler[{}], incoming filter[{}], lifecycle callback[{}], retry delay[{} {}], servers[{}]",
+                asArray(incomingInterceptor, incomingFilter, lifecycleCallback, retryDelay, retryUnits, servers));
     }
 
     public void start() {
+        logger.trace("Starting re-connect handler");
         reconnectHandler.enable();
     }
 
     public void stop() throws InterruptedException {
+        logger.trace("Disabling/shutting down re-connect handler and releasing resources");
         reconnectHandler.disable();
         reconnectHandler.shutdown();
         factory.releaseExternalResources();
     }
 
     void subscribe(final String topic, final MessageCallback... callbacks) {
+        logger.trace("Subscribing callbacks [{}] for topic[{}]", asArray(callbacks, topic));
         clientHandler.subscribe(topic, callbacks);
     }
 
     void unsubscribe(final String topic, final MessageCallback... callbacks) {
+        logger.trace("Unsubscribing callbacks [{}] for topic[{}]", asArray(callbacks, topic));
         clientHandler.unsubscribe(topic, callbacks);
     }
 
@@ -149,6 +162,9 @@ public final class PubSubClient {
         Preconditions.checkNotNull(message, "Message can be empty but not null");
         Preconditions.checkNotNull(topic, "Topic can be empty but not null");
         final Channel channel = reconnectHandler.channel();
+        logger.trace(channel != null ? "Publishing full message of length {} to topic[{}]"
+                : "Not currently connected to a server, dropping message of length {} to topic[{}]",
+                asArray(message.remaining(), topic));
         return channel != null ? new NettyToJDKFuture(channel.write(new ApplicationMessage(message, topic)))
                 : NettyToJDKFuture.WRITE_FAILED;
     }
