@@ -20,9 +20,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>us.harward</groupId>
     <artifactId>commons-j</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>NDH Commons</name>
+    <name>Commons-J</name>
     <description>Collection of Java 1.6+ utility code I find useful that I didn't find elsewhere.</description>
     <url>https://github.com/nharward/commons-j</url>
     <inceptionYear>2010</inceptionYear>
