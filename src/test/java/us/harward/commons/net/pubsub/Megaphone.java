@@ -17,6 +17,8 @@
 
 package us.harward.commons.net.pubsub;
 
+import static us.harward.commons.net.NetUtil.hostPortPairsFromString;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -112,7 +114,7 @@ public final class Megaphone implements PubSubClient.NetworkConnectionLifecycleC
 
     public static void main(final String... args) throws Throwable {
         Preconditions.checkArgument(args.length > 1);
-        final Collection<InetSocketAddress> servers = PubSubServer.hostPortPairsFromString(args[0]);
+        final Collection<InetSocketAddress> servers = hostPortPairsFromString(args[0], PubSubServer.DEFAULT_ADDRESS.getPort());
         final Collection<String> topics = new LinkedList<String>();
         for (int pos = 1; pos < args.length; ++pos)
             topics.add(args[pos]);

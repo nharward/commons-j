@@ -17,6 +17,8 @@
 
 package us.harward.commons.net.pubsub;
 
+import static us.harward.commons.net.NetUtil.hostPortPairsFromString;
+
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -130,10 +132,10 @@ public final class PubSubServer {
      *             if unable to parse command line arguments as host:port pairs
      */
     public static void main(final String[] args) throws Throwable {
-        final Collection<InetSocketAddress> listenAddrs = args.length > 0 ? hostPortPairsFromString(args[0])
-                : new LinkedList<InetSocketAddress>();
-        final Collection<InetSocketAddress> remoteAddrs = args.length > 1 ? hostPortPairsFromString(args[1])
-                : new LinkedList<InetSocketAddress>();
+        final Collection<InetSocketAddress> listenAddrs = args.length > 0 ? hostPortPairsFromString(args[0],
+                DEFAULT_ADDRESS.getPort()) : new LinkedList<InetSocketAddress>();
+        final Collection<InetSocketAddress> remoteAddrs = args.length > 1 ? hostPortPairsFromString(args[1],
+                DEFAULT_ADDRESS.getPort()) : new LinkedList<InetSocketAddress>();
         final PubSubServer pss = new PubSubServer(listenAddrs, remoteAddrs);
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 
@@ -149,20 +151,4 @@ public final class PubSubServer {
         }));
         pss.start();
     }
-
-    static Collection<InetSocketAddress> hostPortPairsFromString(final String s) {
-        final Collection<InetSocketAddress> rv = new LinkedList<InetSocketAddress>();
-        if (s != null && s.trim().length() > 0) {
-            for (final String pair : s.split(",")) {
-                final String[] parts = pair.split(":");
-                if (parts.length > 0) {
-                    final String host = parts[0];
-                    final int port = parts.length > 1 ? Integer.parseInt(parts[1]) : DEFAULT_ADDRESS.getPort();
-                    rv.add(new InetSocketAddress(host, port));
-                }
-            }
-        }
-        return rv;
-    }
-
 }
