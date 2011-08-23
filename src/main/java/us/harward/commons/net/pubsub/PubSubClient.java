@@ -77,6 +77,10 @@ public final class PubSubClient {
     private final ChannelFactory             factory;
     private final ClientBootstrap            bootstrap;
 
+    public PubSubClient(final ExecutorService service, final Collection<InetSocketAddress> servers) {
+        this(service, null, DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS, servers);
+    }
+
     public PubSubClient(final ExecutorService service, final NetworkConnectionLifecycleCallback lifecycleCallback,
             final Collection<InetSocketAddress> servers) {
         this(service, lifecycleCallback, DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS, servers);
@@ -140,25 +144,25 @@ public final class PubSubClient {
         factory.releaseExternalResources();
     }
 
-    void subscribe(final String topic, final MessageCallback... callbacks) {
+    public void subscribe(final String topic, final MessageCallback... callbacks) {
         logger.trace("Subscribing callbacks [{}] for topic[{}]", asArray(callbacks, topic));
         clientHandler.subscribe(topic, callbacks);
     }
 
-    void unsubscribe(final String topic, final MessageCallback... callbacks) {
+    public void unsubscribe(final String topic, final MessageCallback... callbacks) {
         logger.trace("Unsubscribing callbacks [{}] for topic[{}]", asArray(callbacks, topic));
         clientHandler.unsubscribe(topic, callbacks);
     }
 
-    Future<Boolean> publish(final byte[] message, final String topic) {
+    public Future<Boolean> publish(final byte[] message, final String topic) {
         return publish(ByteBuffer.wrap(message), topic);
     }
 
-    Future<Boolean> publish(final byte[] message, final int offset, final int length, final String topic) {
+    public Future<Boolean> publish(final byte[] message, final int offset, final int length, final String topic) {
         return publish(ByteBuffer.wrap(message, offset, length), topic);
     }
 
-    Future<Boolean> publish(final ByteBuffer message, final String topic) {
+    public Future<Boolean> publish(final ByteBuffer message, final String topic) {
         Preconditions.checkNotNull(message, "Message can be empty but not null");
         Preconditions.checkNotNull(topic, "Topic can be empty but not null");
         final Channel channel = reconnectHandler.channel();
