@@ -56,10 +56,11 @@ public final class Megaphone implements PubSubClient.NetworkConnectionLifecycleC
         connected = new AtomicBoolean(false);
         this.topics = new LinkedList<String>();
         client = new PubSubClient(Executors.newCachedThreadPool(), this, servers);
-        for (final String topic : topics) {
-            this.topics.add(topic);
-            client.subscribe(topic, new MessagePrinter(topic));
-        }
+        if (!topics.isEmpty())
+            for (final String topic : topics) {
+                this.topics.add(topic);
+                client.subscribe(topic, new MessagePrinter(topic));
+            }
     }
 
     private void repl() throws Exception {
