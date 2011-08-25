@@ -69,12 +69,12 @@ final class ClientMessageHandler extends SimpleChannelHandler {
                 group = subscribers.get(topic);
                 logger.trace("Found {} existing subscribers for topic[{}]: ", group.size(), topic);
             } else {
-                logger.trace("Creating new subscriber group for topic[{}]");
+                logger.trace("Creating new subscriber group for topic[{}]", topic);
                 group = new CopyOnWriteArrayList<PubSubClient.MessageCallback>();
                 subscribers.put(topic, group);
                 final Channel channel = activeChannel.get();
                 if (channel != null) {
-                    logger.trace("Writing new subscriber group for topic[{}]");
+                    logger.trace("Writing new subscriber group for topic[{}]", topic);
                     channel.write(new SubscriptionMessage(true, topic));
                 }
             }
@@ -111,9 +111,11 @@ final class ClientMessageHandler extends SimpleChannelHandler {
         final ArrayList<String> al = new ArrayList<String>();
         for (final String topic : subscribers.keySet())
             al.add(topic);
-        final String[] topics = new String[al.size()];
-        al.toArray(topics);
-        e.getChannel().write(new SubscriptionMessage(true, topics));
+        if (!al.isEmpty()) {
+            final String[] topics = new String[al.size()];
+            al.toArray(topics);
+            e.getChannel().write(new SubscriptionMessage(true, topics));
+        }
         logger.trace("Channel connected and active channel set; subscribed to topics {}", al);
         super.channelConnected(ctx, e);
     }
@@ -129,7 +131,7 @@ final class ClientMessageHandler extends SimpleChannelHandler {
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
         final Object o = e.getMessage();
         if (o instanceof ApplicationMessage) {
-            logger.trace("Received application message - routing to handleApplicationMessage(...)");
+            logger.trace("Received application message ({})- routing to handleApplicationMessage(...)", o);
             handleApplicationMessage(ctx, (ApplicationMessage) o);
         } else
             super.messageReceived(ctx, e);
