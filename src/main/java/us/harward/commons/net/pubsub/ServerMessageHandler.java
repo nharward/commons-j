@@ -86,11 +86,22 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
         final Object o = e.getMessage();
-        if (o instanceof ApplicationMessage)
-            handleApplicationMessage(ctx.getChannel(), (ApplicationMessage) o);
-        else if (o instanceof SubscriptionMessage)
-            handleSubscriptionRequest(ctx.getChannel(), (SubscriptionMessage) o);
-        else
+        final Message m;
+        if (o instanceof Message) {
+            m = (Message) o;
+            logger.debug("Server received message: {}", m);
+            if (m.ttl() > 0) {
+                m.ttl((short) (m.ttl() - 1));
+                logger.debug("Dropped TTL: {}", m);
+                if (m.type == Message.Type.Application)
+                    handleApplicationMessage(ctx.getChannel(), (ApplicationMessage) m);
+                else if (m.type == Message.Type.Subscription)
+                    handleSubscriptionRequest(ctx.getChannel(), (SubscriptionMessage) m);
+                else
+                    logger.warn("Unknown message type: {}", m);
+            } else
+                logger.debug("Dropping message with low TTL: {}", m);
+        } else
             super.messageReceived(ctx, e);
     }
 
