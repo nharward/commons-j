@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -30,11 +31,15 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelDownstreamHandler;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandler;
+import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelDownstreamHandler;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +103,7 @@ public final class PubSubClient {
 
     /*
      * For use in {@link PubSubServer} only, which needs to filter/intercept incoming messages from other servers directly to access
-     * source/server IDs on messages and prevent endless server-to-server message forwarding loops.
+     * source/server IDs on messages and prevent endless server-to-server routing loops.
      */
     PubSubClient(final ChannelHandler incomingInterceptor, final Predicate<Object> incomingFilter, final ExecutorService service,
             final NetworkConnectionLifecycleCallback lifecycleCallback, final int retryDelay, final TimeUnit retryUnits,
@@ -113,15 +118,32 @@ public final class PubSubClient {
         reconnectHandler = new RoundRobinReconnectHandler(bootstrap, retryDelay, retryUnits, lifecycleCallback, servers);
         final UpstreamMessageFilteringHandler filteringHandler = incomingFilter != null ? new UpstreamMessageFilteringHandler(
                 incomingFilter) : null;
+        final UUID ourSourceID = UUID.randomUUID();
+        logger.info("New client created with ID: {}", ourSourceID);
+        final ChannelDownstreamHandler uuidPopulatingHandler = new SimpleChannelDownstreamHandler() {
+
+            @Override
+            public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+                final Object o = e.getMessage();
+                if (o instanceof Message) {
+                    final Message m = (Message) o;
+                    if (m.sourceID() == null || m.sourceID().equals(Message.NO_UUID))
+                        m.sourceID(ourSourceID);
+                }
+                super.writeRequested(ctx, e);
+            }
+
+        };
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 
             @Override
             public ChannelPipeline getPipeline() {
                 if (incomingInterceptor != null && filteringHandler != null)
-                    return Channels.pipeline(reconnectHandler, MessageCodec.decoder(), MessageCodec.encoder(), filteringHandler,
-                            incomingInterceptor, clientHandler);
+                    return Channels.pipeline(reconnectHandler, MessageCodec.decoder(), MessageCodec.encoder(),
+                            uuidPopulatingHandler, filteringHandler, incomingInterceptor, clientHandler);
                 else
-                    return Channels.pipeline(reconnectHandler, MessageCodec.decoder(), MessageCodec.encoder(), clientHandler);
+                    return Channels.pipeline(reconnectHandler, MessageCodec.decoder(), MessageCodec.encoder(),
+                            uuidPopulatingHandler, clientHandler);
             }
 
         });

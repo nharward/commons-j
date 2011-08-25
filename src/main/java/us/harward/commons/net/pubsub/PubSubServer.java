@@ -69,11 +69,16 @@ public final class PubSubServer {
         factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
         bootstrap = new ServerBootstrap(factory);
         final UUID ourServerID = UUID.randomUUID();
+        logger.info("New server created with ID: {}", ourServerID);
         sharedMessageHandler = new ServerMessageHandler(new Predicate<Object>() {
 
             @Override
             public boolean apply(final Object o) {
-                return (o instanceof ApplicationMessage) ? !((ApplicationMessage) o).serverID().equals(ourServerID) : true;
+                if (o instanceof Message) {
+                    final Message m = (Message) o;
+                    return m.ttl() > 0 && !m.serverID().equals(ourServerID);
+                } else
+                    return true;
             }
 
         }, otherServers);
@@ -115,12 +120,12 @@ public final class PubSubServer {
 
     public void stop() throws InterruptedException {
         logger.info("Server shutting down...");
-        sharedMessageHandler.stop();
         final ChannelGroupFuture future = openChannels.close();
         try {
             future.await();
         } finally {
             factory.releaseExternalResources();
+            sharedMessageHandler.stop();
         }
         logger.info("Server shut down.");
     }
