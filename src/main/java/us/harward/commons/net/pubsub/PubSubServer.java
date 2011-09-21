@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelDownstreamHandler;
@@ -51,6 +52,8 @@ public final class PubSubServer {
     private static final Logger                 logger          = LoggerFactory.getLogger(PubSubServer.class);
 
     private final Collection<InetSocketAddress> listenAddresses;
+    private final ExecutorService               bossService;
+    private final ExecutorService               workerService;
     private final ChannelFactory                factory;
     private final ServerBootstrap               bootstrap;
     private final ChannelGroup                  openChannels;
@@ -66,7 +69,9 @@ public final class PubSubServer {
             laddrs.add(DEFAULT_ADDRESS);
         this.listenAddresses = Collections.unmodifiableCollection(laddrs);
         openChannels = new DefaultChannelGroup(getClass().getName());
-        factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+        bossService = Executors.newCachedThreadPool();
+        workerService = Executors.newCachedThreadPool();
+        factory = new NioServerSocketChannelFactory(bossService, workerService);
         bootstrap = new ServerBootstrap(factory);
         final UUID ourServerID = UUID.randomUUID();
         logger.info("New server created with ID: {}", ourServerID);
@@ -124,8 +129,10 @@ public final class PubSubServer {
         try {
             future.await();
         } finally {
-            factory.releaseExternalResources();
             sharedMessageHandler.stop();
+            factory.releaseExternalResources();
+            workerService.shutdown();
+            bossService.shutdown();
         }
         logger.info("Server shut down.");
     }

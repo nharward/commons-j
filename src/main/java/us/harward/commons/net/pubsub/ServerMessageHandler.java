@@ -80,7 +80,9 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
             } catch (final InterruptedException ie) {
                 logger.warn("Caught exception while stopping server-to-server connection", ie);
             }
-        service.shutdownNow();
+        for (final DefaultChannelGroup group : subscribers.values())
+            group.close();
+        service.shutdown();
     }
 
     @Override
