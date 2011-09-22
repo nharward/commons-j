@@ -18,7 +18,7 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>us.harward</groupId>
+    <groupId>nerds.antelax</groupId>
     <artifactId>commons-j</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -116,7 +116,7 @@
             <layout>default</layout>
         </snapshotRepository>
         <site>
-            <id>us.harward.commons-j.website</id>
+            <id>nerds.antelax.commons-j.website</id>
             <name>Maven 2-Generated Website for commons-j</name>
             <url>scpexe://apollo.harward.us/var/www/html/maven2/sites/commons-j</url>
         </site>
@@ -303,7 +303,7 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <mainClass>us.harward.commons.net.pubsub.PubSubServer</mainClass>
+                            <mainClass>nerds.antelax.commons.net.pubsub.PubSubServer</mainClass>
                             <classpathScope>test</classpathScope>
                         </configuration>
                     </plugin>
@@ -329,7 +329,7 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <mainClass>us.harward.commons.net.pubsub.Megaphone</mainClass>
+                            <mainClass>nerds.antelax.commons.net.pubsub.Megaphone</mainClass>
                             <classpathScope>test</classpathScope>
                         </configuration>
                     </plugin>
@@ -358,7 +358,7 @@
                         <configuration>
                             <schemaDirectory>src/test/resources/schema</schemaDirectory>
                             <schemaFiles>rolodex.xsd</schemaFiles>
-                            <packageName>us.harward.commons.xml.jaxbtest.rolodex</packageName>
+                            <packageName>nerds.antelax.commons.xml.jaxbtest.rolodex</packageName>
                             <outputDirectory>${project.build.directory}/generated-test-sources/jaxb/rolodex</outputDirectory>
                             <staleFile>${project.build.directory}/generated-test-sources/jaxb/rolodex/.staleFlag</staleFile>
                         </configuration>
@@ -408,7 +408,7 @@
                         <configuration>
                             <schemaDirectory>src/test/resources/schema</schemaDirectory>
                             <schemaFiles>rolodex.xsd</schemaFiles>
-                            <packageName>us.harward.commons.xml.jaxbtest.rolodex</packageName>
+                            <packageName>nerds.antelax.commons.xml.jaxbtest.rolodex</packageName>
                             <outputDirectory>${project.build.directory}/generated-test-sources/jaxb/rolodex</outputDirectory>
                             <staleFile>${project.build.directory}/generated-test-sources/jaxb/rolodex/.staleFlag</staleFile>
                         </configuration>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<r:contacts xmlns:r="http://us.harward.xmlns/rolodex" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://us.harward.xmlns/rolodex ../schema/rolodex.xsd ">
+<r:contacts xmlns:r="http://nerds.antelax.xmlns/rolodex" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://nerds.antelax.xmlns/rolodex ../schema/rolodex.xsd ">
     <!--  This is a comment about all contacts -->
     <r:person>
         <!--  This is a comment about John Doe -->
