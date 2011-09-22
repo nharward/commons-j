@@ -19,28 +19,29 @@ package nerds.antelax.commons.util;
 
 import static nerds.antelax.commons.util.Equals.allowNull;
 import static nerds.antelax.commons.util.Equals.disallowNull;
-import junit.framework.Assert;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertTrue;
 
-import org.junit.Test;
+import org.testng.annotations.Test;
 
 public class EqualsTest {
 
     @Test
     public final void testAllowNull() {
-        Assert.assertTrue(allowNull(null, null));
-        Assert.assertTrue(allowNull("Testing", "Testing"));
-        Assert.assertFalse(allowNull("Testing", "NotEqual"));
-        Assert.assertFalse(allowNull(null, "Testing"));
-        Assert.assertFalse(allowNull("Testing", null));
+        assertTrue(allowNull(null, null));
+        assertTrue(allowNull("Testing", "Testing"));
+        assertFalse(allowNull("Testing", "NotEqual"));
+        assertFalse(allowNull(null, "Testing"));
+        assertFalse(allowNull("Testing", null));
     }
 
     @Test
     public final void testDisallowNull() {
-        Assert.assertFalse(disallowNull(null, null));
-        Assert.assertTrue( disallowNull("Testing", "Testing"));
-        Assert.assertFalse(disallowNull("Testing", "NotEqual"));
-        Assert.assertFalse(disallowNull(null, "Testing"));
-        Assert.assertFalse(disallowNull("Testing", null));
+        assertFalse(disallowNull(null, null));
+        assertTrue(disallowNull("Testing", "Testing"));
+        assertFalse(disallowNull("Testing", "NotEqual"));
+        assertFalse(disallowNull(null, "Testing"));
+        assertFalse(disallowNull("Testing", null));
     }
 
 }

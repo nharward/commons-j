@@ -17,6 +17,10 @@
 
 package nerds.antelax.commons.concurrent;
 
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertSame;
+
 import java.security.SecureRandom;
 import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
@@ -24,11 +28,7 @@ import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-import junit.framework.Assert;
-
-import nerds.antelax.commons.concurrent.IteratorSinkAdapter;
-
-import org.junit.Test;
+import org.testng.annotations.Test;
 
 public class IteratorSinkAdapterTest {
 
@@ -38,12 +38,12 @@ public class IteratorSinkAdapterTest {
             new IteratorSinkAdapter<Object>(pos);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public final void zeroCapacityConstructor() {
         new IteratorSinkAdapter<Object>(0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public final void negativeCapacityConstructor() {
         new IteratorSinkAdapter<Object>(-1);
     }
@@ -84,25 +84,25 @@ public class IteratorSinkAdapterTest {
         int numObjectsRead = 0;
         while (isa.hasNext()) {
             final Object o = isa.next();
-            Assert.assertSame(filler, o);
+            assertSame(filler, o);
             ++numObjectsRead;
         }
-        Assert.assertEquals(numObjectsRead, numObjectsToFillPerThread * numThreads);
+        assertEquals(numObjectsRead, numObjectsToFillPerThread * numThreads);
     }
 
-    @Test(expected = ConcurrentModificationException.class)
+    @Test(expectedExceptions = ConcurrentModificationException.class)
     public final void finish() {
         final IteratorSinkAdapter<Object> isa = new IteratorSinkAdapter<Object>(1);
         isa.finish();
-        Assert.assertFalse(isa.hasNext());
+        assertFalse(isa.hasNext());
         isa.drop(this);
     }
 
-    @Test(expected = NoSuchElementException.class)
+    @Test(expectedExceptions = NoSuchElementException.class)
     public final void empty() {
         final IteratorSinkAdapter<Object> isa = new IteratorSinkAdapter<Object>(1);
         isa.finish();
-        Assert.assertFalse(isa.hasNext());
+        assertFalse(isa.hasNext());
         isa.next();
     }
 
@@ -110,11 +110,11 @@ public class IteratorSinkAdapterTest {
     public final void idempotence() {
         final IteratorSinkAdapter<Object> isa = new IteratorSinkAdapter<Object>(1);
         isa.finish();
-        Assert.assertFalse(isa.hasNext());
+        assertFalse(isa.hasNext());
         for (int pos = 0; pos < 1000; ++pos) {
-            Assert.assertFalse(isa.hasNext());
+            assertFalse(isa.hasNext());
             isa.finish();
-            Assert.assertFalse(isa.hasNext());
+            assertFalse(isa.hasNext());
         }
     }
 

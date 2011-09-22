@@ -17,14 +17,13 @@
 
 package nerds.antelax.commons.stat;
 
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertNotNull;
+
 import java.security.SecureRandom;
 import java.util.Random;
 
-import junit.framework.Assert;
-
-import nerds.antelax.commons.stat.SimpleStatistic;
-
-import org.junit.Test;
+import org.testng.annotations.Test;
 
 public class SimpleStatisticTest {
 
@@ -62,7 +61,7 @@ public class SimpleStatisticTest {
             final int samples = new SecureRandom().nextInt(10000);
             for (int pos2 = 0; pos2 < samples; ++pos2)
                 stat.addSample(pos2);
-            Assert.assertEquals(samples, stat.sampleCount());
+            assertEquals(samples, stat.sampleCount());
         }
     }
 
@@ -77,7 +76,7 @@ public class SimpleStatisticTest {
             if (newValue < expected)
                 expected = newValue;
         }
-        Assert.assertEquals(expected, stat.minimum());
+        assertEquals(expected, stat.minimum());
     }
 
     @Test
@@ -91,7 +90,7 @@ public class SimpleStatisticTest {
             if (newValue > expected)
                 expected = newValue;
         }
-        Assert.assertEquals(expected, stat.maximum());
+        assertEquals(expected, stat.maximum());
     }
 
     @Test
@@ -104,7 +103,7 @@ public class SimpleStatisticTest {
             stat.addSample(newValue);
             expected += newValue;
         }
-        Assert.assertEquals(expected, stat.sum());
+        assertEquals(expected, stat.sum());
     }
 
     @Test
@@ -118,16 +117,17 @@ public class SimpleStatisticTest {
             expected += newValue;
         }
         expected /= 10000;
-        Assert.assertEquals(expected, stat.average());
+        assertEquals(expected, stat.average());
     }
 
-    private static void checkStat(final SimpleStatistic stat, final String name, long expectedCnt, long expectedMin, long expectedMax, long expectedSum, long expectedAvg) {
-        Assert.assertNotNull("Named constructor causes null name", stat.name());
-        Assert.assertEquals("Named constructor changes name", name, stat.name());
-        Assert.assertEquals("Sample count != 0 -> " + stat.sampleCount(), expectedCnt, stat.sampleCount());
-        Assert.assertEquals("Minimum != 0 -> " + stat.minimum(), expectedMin, stat.minimum());
-        Assert.assertEquals("Maximum != 0 -> " + stat.maximum(), expectedMax, stat.maximum());
-        Assert.assertEquals("Sum != 0 -> " + stat.sum(), expectedSum, stat.sum());
-        Assert.assertEquals("Average != 0 -> " + stat.average(), expectedAvg, stat.average());
+    private static void checkStat(final SimpleStatistic stat, final String name, final long expectedCnt, final long expectedMin,
+            final long expectedMax, final long expectedSum, final long expectedAvg) {
+        assertNotNull("Named constructor causes null name", stat.name());
+        assertEquals("Named constructor changes name", name, stat.name());
+        assertEquals("Sample count != 0 -> " + stat.sampleCount(), expectedCnt, stat.sampleCount());
+        assertEquals("Minimum != 0 -> " + stat.minimum(), expectedMin, stat.minimum());
+        assertEquals("Maximum != 0 -> " + stat.maximum(), expectedMax, stat.maximum());
+        assertEquals("Sum != 0 -> " + stat.sum(), expectedSum, stat.sum());
+        assertEquals("Average != 0 -> " + stat.average(), expectedAvg, stat.average());
     }
 }
