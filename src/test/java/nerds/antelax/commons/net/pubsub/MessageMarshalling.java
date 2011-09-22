@@ -16,10 +16,10 @@
 // along with commons-j. If not, see <http://www.gnu.org/licenses/>.
 package nerds.antelax.commons.net.pubsub;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-
+import static org.testng.AssertJUnit.assertArrayEquals;
+import static org.testng.AssertJUnit.assertSame;
+import static org.testng.AssertJUnit.assertEquals;
+import org.testng.annotations.Test;
 import java.security.SecureRandom;
 import java.util.UUID;
 
@@ -30,7 +30,6 @@ import nerds.antelax.commons.net.pubsub.SubscriptionMessage;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.junit.Test;
 
 public class MessageMarshalling {
 
