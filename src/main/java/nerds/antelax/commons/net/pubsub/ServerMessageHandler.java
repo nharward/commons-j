@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -50,6 +51,7 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
 
     private static final Logger                    logger = LoggerFactory.getLogger(ServerMessageHandler.class);
 
+    private final DefaultChannelGroup              connectedClients;
     private final Map<String, DefaultChannelGroup> subscribers;
     private final Lock                             lock;
     private final ExecutorService                  service;
@@ -58,6 +60,7 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
     ServerMessageHandler(final Predicate<Object> serverToServerFilter, final Collection<InetSocketAddress> remoteServers) {
         Preconditions.checkNotNull(serverToServerFilter);
         Preconditions.checkNotNull(remoteServers);
+        connectedClients = new DefaultChannelGroup("Connected clients");
         subscribers = new ConcurrentHashMap<String, DefaultChannelGroup>();
         lock = new ReentrantLock();
         this.remoteServers = new LinkedList<PubSubClient>();
@@ -80,9 +83,20 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
             } catch (final InterruptedException ie) {
                 logger.warn("Caught exception while stopping server-to-server connection", ie);
             }
-        for (final DefaultChannelGroup group : subscribers.values())
-            group.close();
+        try {
+            connectedClients.close().await();
+        } catch (final InterruptedException ie) {
+            logger.warn("Interrupted while closing connected clients channel group[" + connectedClients
+                    + "], shutdown may not be clean", ie);
+        }
         service.shutdown();
+    }
+
+    @Override
+    public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+        logger.trace("Client connected on channel[{}]", e.getChannel());
+        connectedClients.add(e.getChannel());
+        super.channelConnected(ctx, e);
     }
 
     @Override

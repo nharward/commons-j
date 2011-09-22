@@ -109,7 +109,11 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
         disable();
         final Channel c = currentChannel.get();
         if (c != null)
-            c.close();
+            try {
+                c.close().await();
+            } catch (final InterruptedException ie) {
+                logger.warn("Interrupted while shutting down client channel, may not stop cleanly", ie);
+            }
         timer.stop();
     }
 

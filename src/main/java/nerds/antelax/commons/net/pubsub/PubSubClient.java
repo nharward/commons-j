@@ -46,7 +46,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 
@@ -80,6 +79,8 @@ public final class PubSubClient {
     private final ClientMessageHandler       clientHandler;
     private final RoundRobinReconnectHandler reconnectHandler;
 
+    private final ExecutorService            bossService;
+    private final ExecutorService            workerService;
     private final ChannelFactory             factory;
     private final ClientBootstrap            bootstrap;
 
@@ -114,7 +115,9 @@ public final class PubSubClient {
         Preconditions.checkNotNull(service, "ExecutorService cannot be null");
         Preconditions.checkNotNull(servers, "Must give at least one server address to connect to");
         clientHandler = new ClientMessageHandler(service);
-        factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+        bossService = Executors.newCachedThreadPool();
+        workerService = Executors.newCachedThreadPool();
+        factory = new NioClientSocketChannelFactory(bossService, workerService);
         bootstrap = new ClientBootstrap(factory);
         reconnectHandler = new RoundRobinReconnectHandler(bootstrap, retryDelay, retryUnits, lifecycleCallback, servers);
         final UpstreamMessageFilteringHandler filteringHandler = incomingFilter != null ? new UpstreamMessageFilteringHandler(
@@ -161,10 +164,15 @@ public final class PubSubClient {
     }
 
     public void stop() throws InterruptedException {
-        logger.trace("Disabling/shutting down re-connect handler and releasing resources");
-        reconnectHandler.disable();
+        logger.trace("Disabling/shutting down re-connect handler");
         reconnectHandler.shutdown();
+        logger.trace("Releasing factory external resources");
         factory.releaseExternalResources();
+        logger.trace("Shutting down boss service");
+        bossService.shutdown();
+        logger.trace("Shutting down worker service");
+        workerService.shutdown();
+        logger.trace("Client shutdown complete");
     }
 
     public void subscribe(final String topic, final MessageCallback... callbacks) {
@@ -185,6 +193,7 @@ public final class PubSubClient {
         return publish(ByteBuffer.wrap(message, offset, length), topic);
     }
 
+    @SuppressWarnings("unchecked")
     public Future<Boolean> publish(final ByteBuffer message, final String topic) {
         Preconditions.checkNotNull(message, "Message can be empty but not null");
         Preconditions.checkNotNull(topic, "Topic can be empty but not null");
