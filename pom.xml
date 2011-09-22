@@ -319,6 +319,25 @@
                 <defaultGoal>exec:java</defaultGoal>
                 <plugins>
                     <plugin>
+                        <groupId>org.codehaus.groovy.maven</groupId>
+                        <artifactId>gmaven-plugin</artifactId>
+                        <version>1.0</version>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>execute</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <source>
+                                System.setProperty("java.util.logging.config.file", "${project.build.outputDirectory}/TRACE-java.logging.config.properties")
+                                java.util.logging.LogManager.getLogManager().readConfiguration()
+                            </source>
+                        </configuration>
+                    </plugin>
+                    <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
