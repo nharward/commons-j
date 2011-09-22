@@ -41,7 +41,7 @@ public final class NetUtil {
             for (final String pair : hostPortPairs.split(",")) {
                 final String[] parts = pair.split(":");
                 if (parts.length > 0) {
-                    final String host = parts[0];
+                    final String host = parts[0].trim();
                     final int port = parts.length > 1 ? Integer.parseInt(parts[1]) : defaultPort;
                     rv.add(new InetSocketAddress(host, port));
                 }
