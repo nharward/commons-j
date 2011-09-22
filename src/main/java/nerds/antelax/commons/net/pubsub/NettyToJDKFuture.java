@@ -81,6 +81,7 @@ final class NettyToJDKFuture implements Future<Boolean> {
 
     @Override
     public Boolean get() throws InterruptedException, ExecutionException {
+        wrapped.await();
         return wrapped.isSuccess();
     }
 
