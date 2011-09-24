@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelDownstreamHandler;
@@ -47,7 +47,7 @@ import com.google.common.base.Predicate;
 
 public final class PubSubServer {
 
-    public static final InetSocketAddress       DEFAULT_ADDRESS = new InetSocketAddress(9000);
+    public static final InetSocketAddress       DEFAULT_ADDRESS = new InetSocketAddress(6302);
 
     private static final Logger                 logger          = LoggerFactory.getLogger(PubSubServer.class);
 
