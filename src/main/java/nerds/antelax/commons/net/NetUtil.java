@@ -16,11 +16,22 @@
 // along with commons-j. If not, see <http://www.gnu.org/licenses/>.
 package nerds.antelax.commons.net;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.Collection;
 import java.util.LinkedList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+
 public final class NetUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(NetUtil.class);
 
     private NetUtil() {
         throw new RuntimeException("Utility class, not for instantiation");
@@ -48,6 +59,80 @@ public final class NetUtil {
             }
         }
         return rv;
+    }
+
+    /**
+     * @return a {@link Predicate} that indicates where {@link InetSocketAddress} objects passed to it will conflict (if bound by a
+     *         server) with the passed in {@link InetSocketAddress}. physical)
+     */
+    public static Predicate<InetSocketAddress> bindConflict(final InetSocketAddress bound) {
+        return new BindConflictPredicate(bound);
+    }
+
+    /**
+     * @return a {@link Predicate} that matches {@link InetAddress} objects that are local to the current machine
+     */
+    public static Predicate<InetAddress> machineLocalAddress() {
+        return MachineLocalPredicate.INSTANCE;
+    }
+
+    /**
+     * @return a {@link Predicate} that matches {@link InetSocketAddress} objects that are local to the current machine
+     */
+    public static Predicate<InetSocketAddress> machineLocalSocketAddress() {
+        return MachineLocalWithSocketPredicate.INSTANCE;
+    }
+
+    private static final class MachineLocalPredicate implements Predicate<InetAddress> {
+
+        private static final MachineLocalPredicate INSTANCE = new MachineLocalPredicate();
+
+        @Override
+        public boolean apply(final InetAddress input) {
+            try {
+                return input.isLoopbackAddress() || input.isAnyLocalAddress() || NetworkInterface.getByInetAddress(input) != null;
+            } catch (final SocketException se) {
+                logger.error("Exception retrieving network interface for address[" + input + "]", se);
+                return false;
+            }
+        }
+
+    }
+
+    private static final class MachineLocalWithSocketPredicate implements Predicate<InetSocketAddress> {
+
+        private static final MachineLocalWithSocketPredicate INSTANCE = new MachineLocalWithSocketPredicate();
+
+        @Override
+        public boolean apply(final InetSocketAddress input) {
+            return machineLocalAddress().apply(input.getAddress());
+        }
+
+    }
+
+    private static final class BindConflictPredicate implements Predicate<InetSocketAddress> {
+
+        private final InetSocketAddress bound;
+
+        private BindConflictPredicate(final InetSocketAddress bound) {
+            Preconditions.checkNotNull(bound);
+            Preconditions.checkArgument(machineLocalAddress().apply(bound.getAddress()),
+                    "Bound socket address should be local to this machine");
+            this.bound = bound;
+        }
+
+        @Override
+        public boolean apply(final InetSocketAddress input) {
+            if (bound.getPort() != input.getPort())
+                return false;
+            else if (!machineLocalSocketAddress().apply(input))
+                return false;
+            else if (bound.getAddress().isAnyLocalAddress() || input.getAddress().isAnyLocalAddress())
+                return true;
+            else
+                return bound.getAddress().equals(input.getAddress());
+        }
+
     }
 
 }

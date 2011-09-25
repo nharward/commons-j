@@ -16,9 +16,7 @@
 // along with commons-j. If not, see <http://www.gnu.org/licenses/>.
 package nerds.antelax.commons.net.pubsub;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -30,10 +28,9 @@ import javax.servlet.ServletContextListener;
 
 import nerds.antelax.commons.net.NetUtil;
 
-
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 
 /**
  * <p>
@@ -52,25 +49,11 @@ public class PubSubServerContextListener implements ServletContextListener {
     public static final String                                          CLUSTER_INIT_PARAM = "pubsub-cluster";
 
     private static final Collection<InetSocketAddress>                  EMPTY;
-    private static final Predicate<InetSocketAddress>                   LOCALHOST_P;
     private static final AtomicReference<Collection<InetSocketAddress>> REMOTE_SERVERS;
 
     static {
         EMPTY = Collections.unmodifiableCollection(new LinkedList<InetSocketAddress>());
         REMOTE_SERVERS = new AtomicReference<Collection<InetSocketAddress>>(EMPTY);
-        try {
-            final String hostname = InetAddress.getLocalHost().getCanonicalHostName();
-            LOCALHOST_P = new Predicate<InetSocketAddress>() {
-
-                @Override
-                public boolean apply(final InetSocketAddress isa) {
-                    return isa.getHostName().equalsIgnoreCase(hostname);
-                }
-
-            };
-        } catch (final UnknownHostException uhe) {
-            throw new RuntimeException("Unable to determine local host name", uhe);
-        }
     }
 
     private PubSubServer                                                server;
@@ -80,16 +63,14 @@ public class PubSubServerContextListener implements ServletContextListener {
         final ServletContext sc = ctx.getServletContext();
         final Collection<InetSocketAddress> cluster = sc != null ? NetUtil.hostPortPairsFromString(
                 sc.getInitParameter(CLUSTER_INIT_PARAM), PubSubServer.DEFAULT_ADDRESS.getPort()) : EMPTY;
-        REMOTE_SERVERS.set(Collections2.filter(cluster, Predicates.not(LOCALHOST_P)));
-        final Collection<InetSocketAddress> local = Collections2.filter(cluster, LOCALHOST_P);
-        if (!local.isEmpty()) {
-            server = new PubSubServer(local, remoteServers());
+        REMOTE_SERVERS.set(Collections2.filter(cluster, Predicates.not(NetUtil.machineLocalSocketAddress())));
+        if (Iterables.any(cluster, NetUtil.machineLocalSocketAddress())) {
+            server = new PubSubServer(cluster);
+            ctx.getServletContext().log("Starting PubSub server, this machine is part of the cluster definition[" + cluster + "]");
             server.start();
-            ctx.getServletContext().log("Started PubSub server on " + local + ", connected to remotes " + remoteServers());
         } else {
-            ctx.getServletContext().log(
-                    "No PubSub server started on " + local + ", remotes available for clients are " + remoteServers());
             server = null;
+            ctx.getServletContext().log("No PubSub server started, remotes available for final clients are " + remoteServers());
         }
     }
 

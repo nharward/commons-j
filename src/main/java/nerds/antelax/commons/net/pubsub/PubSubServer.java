@@ -27,6 +27,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import nerds.antelax.commons.net.NetUtil;
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelDownstreamHandler;
 import org.jboss.netty.channel.ChannelFactory;
@@ -43,7 +45,10 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
 
 public final class PubSubServer {
 
@@ -60,14 +65,25 @@ public final class PubSubServer {
 
     private final ServerMessageHandler          sharedMessageHandler;
 
-    public PubSubServer(final Collection<InetSocketAddress> listenAddresses, final Collection<InetSocketAddress> otherServers) {
-        final Collection<InetSocketAddress> laddrs = new LinkedList<InetSocketAddress>();
-        if (listenAddresses != null && !listenAddresses.isEmpty())
-            for (final InetSocketAddress address : listenAddresses)
-                laddrs.add(address);
+    /**
+     * Giving a null or empty argument starts a local server. If a non-null, non-empty argument is given then start a server,
+     * listening to all local socket addresses in the argument. Any non-local socket addresses are considered remote peer servers.
+     * 
+     * @throws IllegalArgumentException
+     *             if the {@link Collection} argument is not empty but contains no local addresses to bind to
+     */
+    public PubSubServer(final Collection<InetSocketAddress> clusterDefinition) {
+        final Collection<InetSocketAddress> localAddrs = clusterDefinition != null ? Collections2.filter(clusterDefinition,
+                NetUtil.machineLocalSocketAddress()) : new LinkedList<InetSocketAddress>();
+        final Collection<InetSocketAddress> remoteAddrs = clusterDefinition != null ? Collections2.filter(clusterDefinition,
+                Predicates.not(NetUtil.machineLocalSocketAddress())) : new LinkedList<InetSocketAddress>();
+        if (clusterDefinition == null || clusterDefinition.isEmpty())
+            localAddrs.add(DEFAULT_ADDRESS);
         else
-            laddrs.add(DEFAULT_ADDRESS);
-        this.listenAddresses = Collections.unmodifiableCollection(laddrs);
+            Preconditions.checkArgument(!localAddrs.isEmpty(),
+                    "Attempt to start a server on a machine that is not part of the cluster definition");
+
+        listenAddresses = Collections.unmodifiableCollection(localAddrs);
         openChannels = new DefaultChannelGroup(getClass().getName());
         bossService = Executors.newCachedThreadPool();
         workerService = Executors.newCachedThreadPool();
@@ -86,7 +102,7 @@ public final class PubSubServer {
                     return true;
             }
 
-        }, otherServers);
+        }, Collections.unmodifiableCollection(remoteAddrs));
         final ChannelDownstreamHandler uuidPopulatingHandler = new SimpleChannelDownstreamHandler() {
 
             @Override
@@ -139,28 +155,18 @@ public final class PubSubServer {
 
     /**
      * @param args
-     *            host:port pairs to listen on, if none given then the default of port 9000 on all interfaces is used.
+     *            host:port pairs that define the cluster (this machine needs to be part of that cluster), if none given then the
+     *            default on all interfaces is used. If stdin is available then once a single byte is read the server will be
+     *            stopped (useful for command line debugging), but if not the server will run indefinitely.
      * @throws Throwable
      *             if unable to parse command line arguments as host:port pairs
      */
     public static void main(final String[] args) throws Throwable {
-        final Collection<InetSocketAddress> listenAddrs = args.length > 0 ? hostPortPairsFromString(args[0],
-                DEFAULT_ADDRESS.getPort()) : new LinkedList<InetSocketAddress>();
-        final Collection<InetSocketAddress> remoteAddrs = args.length > 1 ? hostPortPairsFromString(args[1],
-                DEFAULT_ADDRESS.getPort()) : new LinkedList<InetSocketAddress>();
-        final PubSubServer pss = new PubSubServer(listenAddrs, remoteAddrs);
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    pss.stop();
-                } catch (final InterruptedException ie) {
-                    logger.error("Interrupted while waiting for server to shut down", ie);
-                }
-            }
-
-        }));
+        final Collection<InetSocketAddress> cluster = args.length > 0 ? hostPortPairsFromString(args[0], DEFAULT_ADDRESS.getPort())
+                : new LinkedList<InetSocketAddress>();
+        final PubSubServer pss = new PubSubServer(cluster);
         pss.start();
+        if (System.in.read() != -1)
+            pss.stop();
     }
 }

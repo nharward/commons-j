@@ -1,9 +1,11 @@
 package nerds.antelax.commons.net.pubsub;
 
-import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertFalse;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -14,8 +16,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
+import nerds.antelax.commons.net.NetUtil;
 import nerds.antelax.commons.util.Conversions;
 
 import org.slf4j.Logger;
@@ -25,26 +31,33 @@ import org.testng.annotations.Test;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 
 public class PubSubTest {
 
     private static final Logger logger = LoggerFactory.getLogger(PubSubTest.class);
     private static final String topic  = "pubsub-test";
 
+    @SuppressWarnings("unchecked")
     @Test(dataProvider = "server-addresses")
-    public void test(final Collection<InetSocketAddress> serverAddresses) throws InterruptedException, ExecutionException {
+    public void test(final Collection<InetSocketAddress> cluster) throws InterruptedException, ExecutionException {
+        Preconditions.checkArgument(Iterables.all(cluster, NetUtil.machineLocalSocketAddress()),
+                "All machines in the cluster definition should be local");
         final SecureRandom random = new SecureRandom();
-        final int clientsPerServer = random.nextInt(3) + 1;
-        final int messagesPerClient = random.nextInt(100) + 1;
+        final int clientsPerPort = random.nextInt(4) + 1;
+        final int messagesPerClient = random.nextInt(100000) + 100;
+        final int messageReceivedCount = (((cluster.size() * clientsPerPort) - 1) * messagesPerClient)
+                * (cluster.size() * clientsPerPort);
+        final int payloadSize = random.nextInt(1024);
         final ExecutorService clientSvc = Executors.newCachedThreadPool();
-        final Collection<PubSubServer> servers = new LinkedList<PubSubServer>();
+        final PubSubServer server = new PubSubServer(cluster);
+        server.start();
         final Collection<PubSubClient> clients = new LinkedList<PubSubClient>();
+        final AtomicLong startNanos = new AtomicLong();
         try {
-            // Set up a latch, so that we know when all our clients are happily connected
-            final CountDownLatch latch = new CountDownLatch(serverAddresses.size() * clientsPerServer);
+            // Set up a latch so that we know when all our clients are happily connected
+            final CountDownLatch latch = new CountDownLatch(cluster.size() * clientsPerPort);
             final PubSubClient.NetworkConnectionLifecycleCallback lifecycle = new PubSubClient.NetworkConnectionLifecycleCallback() {
 
                 @Override
@@ -55,67 +68,72 @@ public class PubSubTest {
                 @Override
                 public void connectionDown(final SocketAddress endpoint) {
                 }
+
             };
 
-            // Set up our message callback, which simply keeps track of how many messages have been received
-            final AtomicInteger messageCount = new AtomicInteger(0);
+            // Set up our message callback which simply decrements from the expected number of messages that will be received
+            final CountDownLatch remainingMessages = new CountDownLatch(messageReceivedCount);
+            final AtomicBoolean tooManyMessages = new AtomicBoolean(false);
             final PubSubClient.MessageCallback callback = new PubSubClient.MessageCallback() {
 
                 @Override
                 public void onMessage(final ByteBuffer message) throws Exception {
-                    messageCount.incrementAndGet();
+                    if (remainingMessages.getCount() == 0)
+                        tooManyMessages.set(true);
+                    remainingMessages.countDown();
                 }
 
             };
 
-            // For each server address, create a new server and its clients
-            for (final InetSocketAddress isa : serverAddresses) {
-                final PubSubServer server = new PubSubServer(Arrays.asList(isa), Collections2.filter(serverAddresses,
-                        Predicates.not(new AddressPredicate(isa))));
-                server.start();
-                servers.add(server);
-                for (int pos = 0; pos < clientsPerServer; ++pos) {
-                    final PubSubClient client = new PubSubClient(clientSvc, lifecycle, serverAddresses);
+            // For each server address, create new clients so that each server address is used
+            for (final InetSocketAddress isa : cluster) {
+                for (int pos = 0; pos < clientsPerPort; ++pos) {
+                    final PubSubClient client = new PubSubClient(clientSvc, lifecycle, Arrays.asList(isa));
                     client.start();
                     client.subscribe(topic, callback);
                     clients.add(client);
                 }
             }
 
-            // Let everything fire up, get connected and be happy - give 1 second per server for topic subscription
-            latch.await();
-            Thread.sleep(1000 * clients.size());
+            // Let everything fire up, get connected and be happy - give 1/2 second per server for topic subscription
+            assert latch.await(3, TimeUnit.MINUTES);
+            Thread.sleep(500 * clients.size());
 
             // Loop through all clients, sending (empty) messages to all of them
-            final byte[] message = new byte[0];
+            final byte[] message = new byte[payloadSize];
+            Arrays.fill(message, (byte) 0x00);
+            final Collection<Future<Boolean>> futures = new LinkedList<Future<Boolean>>();
+            startNanos.set(System.nanoTime());
             for (final PubSubClient client : clients)
-                for (int pos = 0; pos < messagesPerClient; ++pos) {
-                    assert client.publish(message, topic).get() : "Unable to publish message";
-                    Thread.sleep(100);
-                }
+                for (int pos = 0; pos < messagesPerClient; ++pos)
+                    futures.add(client.publish(message, topic));
+            for (final Future<Boolean> future : futures)
+                assert future.get() : "Unable to publish message";
 
-            // Allow some time to pass, say 10 seconds per server
-            Thread.sleep(10 * 1000 * serverAddresses.size());
-
-            // See how many messages we received, and if it's what we expect ;)
-            final int expected = ((clients.size() - 1) * messagesPerClient) * clients.size();
-            final int actual = messageCount.get();
-            logger.info("{} servers, {} clients, {} messages per client for a total of {} messages",
-                    Conversions.asArray(servers.size(), clients.size(), messagesPerClient, expected));
-            assertEquals(expected, actual);
+            // Wait for up to 1 minute
+            assert remainingMessages.await(1, TimeUnit.MINUTES);
+            // Now see if any *extra* messages trickle in... :)
+            Thread.sleep(3 * 1000);
+            assertFalse(tooManyMessages.get());
         } finally {
+            final long endNanos = System.nanoTime();
+            final int messagesSent = cluster.size() * clientsPerPort;
+            final long nsPerMessage = (endNanos - startNanos.get()) / (messagesSent + messageReceivedCount);
+            logger.info(
+                    "Test finished: {} server ports, {} clients per port and {} messages of payload size {} bytes sent per client ({} total messages sent/received) - finished in {}ns ({}ns per message)",
+                    Conversions.asArray(cluster.size(), clientsPerPort, messagesPerClient, payloadSize,
+                            (messagesSent + messageReceivedCount), (endNanos - startNanos.get()), nsPerMessage));
             for (final PubSubClient client : clients)
                 try {
                     client.stop();
                 } catch (final InterruptedException ie) {
                     logger.error("Unable to shut down client[" + client + "] cleanly - may need to kill test", ie);
                 }
-            for (final PubSubServer server : servers)
-                try {
-                    server.stop();
-                } catch (final InterruptedException ie) {
-                    logger.error("Unable to shut down server[" + server + "] cleanly - may need to kill test", ie);
-                }
+            try {
+                server.stop();
+            } catch (final InterruptedException ie) {
+                logger.error("Unable to shut down server[" + server + "] cleanly - may need to kill test", ie);
+            }
             clientSvc.shutdown();
         }
     }
@@ -123,22 +141,25 @@ public class PubSubTest {
     /**
      * Creates some interesting server configurations to test:
      * <ul>
-     * <li>single server</li>
-     * <li>two servers</li>
-     * <li>three servers</li>
-     * <li>random between 5 and 10</li>
+     * <li>single port</li>
+     * <li>two ports</li>
+     * <li>three ports</li>
+     * <li>random between 5 and 10 ports</li>
      * </ul>
+     * 
+     * @throws UnknownHostException
      */
     @DataProvider(name = "server-addresses")
-    public Object[][] serverAddresses() {
+    public Object[][] serverAddresses() throws UnknownHostException {
+        final InetAddress loopback = InetAddress.getByName("127.0.0.1");
+        final InetAddress local = InetAddress.getLocalHost(); // This is usually an external-facing address
         final Function<Integer, InetSocketAddress> serverAddressBuilder = new Function<Integer, InetSocketAddress>() {
-
-            private final InetSocketAddress base = PubSubServer.DEFAULT_ADDRESS;
 
             @Override
             public InetSocketAddress apply(final Integer input) {
-                return new InetSocketAddress(base.getAddress(), base.getPort() + input);
+                return new InetSocketAddress(input % 2 == 0 ? loopback : local, PubSubServer.DEFAULT_ADDRESS.getPort() + input);
             }
+
         };
         final int random = new SecureRandom().nextInt(5) + 5;
         final Collection<Integer> randomCount = new ArrayList<Integer>(random);
@@ -148,22 +169,6 @@ public class PubSubTest {
                 new Object[] { Collections2.transform(Arrays.asList(1, 2), serverAddressBuilder) },
                 new Object[] { Collections2.transform(Arrays.asList(3, 4, 5), serverAddressBuilder) },
                 new Object[] { Collections2.transform(randomCount, serverAddressBuilder) } };
-    }
-
-    private static final class AddressPredicate implements Predicate<InetSocketAddress> {
-
-        private final InetSocketAddress match;
-
-        private AddressPredicate(final InetSocketAddress match) {
-            Preconditions.checkNotNull(match);
-            this.match = match;
-        }
-
-        @Override
-        public boolean apply(final InetSocketAddress input) {
-            return match.equals(input);
-        }
-
     }
 
 }
