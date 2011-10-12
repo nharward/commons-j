@@ -21,12 +21,12 @@ import com.google.common.base.Preconditions;
 
 /**
  * Modeled after C++'s STL std::pair. Safe to use in collections insofar as the constituent types are.
- * 
+ *
  * @param <T1>
  *            the first object type in the pair
  * @param <T2>
  *            the second object type in the pair
- * @see http://www.cplusplus.com/reference/std/utility/pair/
+ * @see <a href="http://www.cplusplus.com/reference/std/utility/pair/">std::pair</a>
  */
 public class Pair<T1, T2> {
 
