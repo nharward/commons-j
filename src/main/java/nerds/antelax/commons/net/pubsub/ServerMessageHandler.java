@@ -36,6 +36,7 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -97,6 +98,20 @@ final class ServerMessageHandler extends SimpleChannelUpstreamHandler {
         logger.trace("Client connected on channel[{}]", e.getChannel());
         connectedClients.add(e.getChannel());
         super.channelConnected(ctx, e);
+    }
+
+    @Override
+    public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+        final Channel c = e.getChannel();
+        if (c != null)
+            c.close();
+    }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) throws Exception {
+        final Channel c = e.getChannel();
+        if (c != null)
+            c.close();
     }
 
     @Override
