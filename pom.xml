@@ -467,4 +467,7 @@
             </build>
         </profile>
     </profiles>
+    <properties>
+        <performRelease>true</performRelease>
+    </properties>
 </project>
