@@ -106,7 +106,9 @@ public class SAXBPParser {
      * Parses an {@link XMLEventReader} to completion, passing on StAX or JAXB parsing events to handlers as indicated by their
      * annotated methods.
      * 
-     * @param context
+     * @param reader
+     *            The {@link XMLEventReader} to read XML events from
+     * @param jaxbContext
      *            if using JAXB for any callbacks, the {@link JAXBContext} to use
      * @param saxbpHandlers
      *            each handler must be annotated with {@link SAXBPHandler}, and should have methods annotated with one or more of
