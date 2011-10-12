@@ -33,12 +33,12 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import com.google.common.base.Preconditions;
 
@@ -123,7 +123,9 @@ final class ClientMessageHandler extends SimpleChannelHandler {
 
     @Override
     public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
-        activeChannel.set(null);
+        final Channel c = activeChannel.getAndSet(null);
+        if (c != null)
+            c.close();
         logger.trace("Channel disconnected - active channel unset");
         super.channelDisconnected(ctx, e);
     }
@@ -137,6 +139,14 @@ final class ClientMessageHandler extends SimpleChannelHandler {
         } else
             super.messageReceived(ctx, e);
     }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent ee) throws Exception {
+        final Channel c = activeChannel.getAndSet(null);
+        if (c != null)
+            c.close();
+        logger.trace("Exception caught - closing active channel", ee.getCause());
+    };
 
     private void handleApplicationMessage(final ChannelHandlerContext ctx, final ApplicationMessage msg) {
         final Collection<PubSubClient.MessageCallback> callbacks = subscribers.get(msg.topic);

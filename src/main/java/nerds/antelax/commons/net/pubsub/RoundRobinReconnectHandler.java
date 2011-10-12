@@ -107,19 +107,17 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
 
     void shutdown() {
         disable();
-        final Channel c = currentChannel.get();
-        if (c != null)
-            try {
-                c.close().await();
-            } catch (final InterruptedException ie) {
-                logger.warn("Interrupted while shutting down client channel, may not stop cleanly", ie);
-            }
         timer.stop();
+        final Channel c = currentChannel.getAndSet(null);
+        if (c != null)
+            c.close();
     }
 
     @Override
     public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
-        currentChannel.set(null);
+        final Channel c = currentChannel.getAndSet(null);
+        if (c != null)
+            c.close();
         final SocketAddress remote = e.getChannel().getRemoteAddress();
         logger.debug("Disconnected from server: {}", remote);
         if (callback != null)
@@ -159,11 +157,14 @@ final class RoundRobinReconnectHandler extends SimpleChannelUpstreamHandler {
     }
 
     @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
-        final Throwable cause = e.getCause();
+    public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent ee) throws Exception {
+        final Throwable cause = ee.getCause();
         if (cause instanceof ConnectException)
             logger.warn("Unable to establish connection to {}", currentRemoteAddress.get());
-        ctx.getChannel().close();
+        final Channel c = currentChannel.getAndSet(null);
+        if (c != null)
+            c.close();
+        super.exceptionCaught(ctx, ee);
     }
 
     private void reconnect() {
