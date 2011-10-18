@@ -46,10 +46,10 @@ public class PubSubTest {
                 "All machines in the cluster definition should be local");
         final SecureRandom random = new SecureRandom();
         final int clientsPerPort = random.nextInt(4) + 1;
-        final int messagesPerClient = random.nextInt(100000) + 100;
+        final int messagesPerClient = random.nextInt(10000) + 100;
         final int messageReceivedCount = (((cluster.size() * clientsPerPort) - 1) * messagesPerClient)
                 * (cluster.size() * clientsPerPort);
-        final int payloadSize = random.nextInt(1024);
+        final int payloadSize = random.nextInt(512);
         final ExecutorService clientSvc = Executors.newCachedThreadPool();
         final PubSubServer server = new PubSubServer(cluster);
         server.start();
