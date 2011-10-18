@@ -118,7 +118,7 @@
         <site>
             <id>nerds.antelax.commons-j.website</id>
             <name>Maven 2-Generated Website for commons-j</name>
-            <url>scpexe://apollo.harward.us/var/www/html/maven2/sites/commons-j</url>
+            <url>scpexe://apollo.harward.us/var/www/html/maven2/sites/commons-j/${project.version}</url>
         </site>
     </distributionManagement>
     <reporting>
