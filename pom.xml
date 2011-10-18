@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>nerds.antelax</groupId>
     <artifactId>commons-j</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
     <name>Commons-J</name>
     <description>Collection of Java 1.6+ utility code I find useful that I didn't find elsewhere.</description>
