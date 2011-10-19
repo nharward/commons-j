@@ -63,7 +63,7 @@ public final class NetUtil {
 
     /**
      * @return a {@link Predicate} that indicates where {@link InetSocketAddress} objects passed to it will conflict (if bound by a
-     *         server) with the passed in {@link InetSocketAddress}. physical)
+     *         server) with the passed in {@link InetSocketAddress}.
      */
     public static Predicate<InetSocketAddress> bindConflict(final InetSocketAddress bound) {
         return new BindConflictPredicate(bound);
@@ -116,7 +116,7 @@ public final class NetUtil {
 
         private BindConflictPredicate(final InetSocketAddress bound) {
             Preconditions.checkNotNull(bound);
-            Preconditions.checkArgument(machineLocalAddress().apply(bound.getAddress()),
+            Preconditions.checkArgument(machineLocalSocketAddress().apply(bound),
                     "Bound socket address should be local to this machine");
             this.bound = bound;
         }
