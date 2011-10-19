@@ -25,6 +25,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
@@ -43,8 +44,10 @@ import javax.xml.transform.Source;
 import nerds.antelax.commons.xml.saxbp.annotations.JAXBHandler;
 import nerds.antelax.commons.xml.saxbp.annotations.SAXBPHandler;
 
-
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
 
 /**
  * An XML parser that is [an attempt at] a best-of combination of SAX/JAXB/StAX, hence the name. The idea is to combine the
@@ -125,28 +128,36 @@ public class SAXBPParser {
         Preconditions.checkArgument(saxbpHandlers.length > 0, "At least one handler must be specified");
         final Map<QName, Collection<ParseInterest>> interestMap = groupInterestByQName(jaxbContext, saxbpHandlers);
         final Deque<QName> context = new LinkedList<QName>();
-        Preconditions.checkArgument(context.isEmpty());
         for (XMLEvent event = reader.peek(); event != null; event = reader.peek()) {
             if (event.isStartDocument()) {
                 context.push(UNNAMED);
             } else if (event.isStartElement()) {
                 context.push(event.asStartElement().getName());
             }
-            boolean interesting = false;
-            if (interestMap.containsKey(context.peek())) {
-                for (final ParseInterest interest : interestMap.get(context.peek())) {
-                    if (interest.accept(event)) {
-                        interest.handleNextEvent(reader);
-                        interesting = true;
-                        if (interest.isJAXB())
-                            context.pop();
-                        break;
+            boolean advanceReader = true;
+            final QName qName = context.peek();
+            if (interestMap.containsKey(qName)) {
+                final Collection<ParseInterest> interest = Collections2.filter(interestMap.get(qName),
+                        new InterestAcceptedPredicate(event));
+                final Collection<ParseInterest> staxInterest = Collections2.filter(interest, StaxPredicate);
+                final Collection<ParseInterest> jaxbInterest = Collections2.filter(interest, JaxbPredicate);
+                for (final ParseInterest pi : staxInterest)
+                    pi.handleEvent(event);
+                // Read the JAXB object only once but pass to each handler
+                final AtomicReference<Object> jaxbEvent = new AtomicReference<Object>();
+                for (final ParseInterest pi : jaxbInterest) {
+                    if (jaxbEvent.get() == null) {
+                        jaxbEvent.set(pi.parseJAXBObject(reader));
+                        // JAXB parsing advances the XML event reader and obviates the start element on the top of the context stack
+                        advanceReader = false;
+                        context.pop();
                     }
+                    pi.handleEvent(jaxbEvent.get());
                 }
             }
             if (event.isEndDocument() || event.isEndElement())
                 context.pop();
-            if (!interesting)
+            if (advanceReader)
                 reader.next();
         }
         Preconditions.checkArgument(context.isEmpty());
@@ -165,6 +176,30 @@ public class SAXBPParser {
         return Collections.unmodifiableMap(interestMap);
     }
 
-    static final QName UNNAMED = new QName(XMLConstants.NULL_NS_URI, "");
+    static final QName                            UNNAMED       = new QName(XMLConstants.NULL_NS_URI, "");
 
+    private static final Predicate<ParseInterest> JaxbPredicate = new Predicate<ParseInterest>() {
+
+                                                                    @Override
+                                                                    public boolean apply(final ParseInterest interest) {
+                                                                        return interest.isJAXB();
+                                                                    }
+
+                                                                };
+    private static final Predicate<ParseInterest> StaxPredicate = Predicates.not(JaxbPredicate);
+
+    private static final class InterestAcceptedPredicate implements Predicate<ParseInterest> {
+
+        private final XMLEvent event;
+
+        private InterestAcceptedPredicate(final XMLEvent event) {
+            Preconditions.checkNotNull(event);
+            this.event = event;
+        }
+
+        @Override
+        public boolean apply(final ParseInterest interest) {
+            return interest.accept(event);
+        }
+    }
 }

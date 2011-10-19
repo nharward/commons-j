@@ -25,7 +25,6 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.annotation.XmlElement;
 
 import nerds.antelax.commons.xml.jaxbtest.rolodex.ContactList;
-import nerds.antelax.commons.xml.jaxbtest.rolodex.PersonType;
 import nerds.antelax.commons.xml.saxbp.annotations.JAXBHandler;
 import nerds.antelax.commons.xml.saxbp.annotations.SAXBPHandler;
 
@@ -33,29 +32,18 @@ import nerds.antelax.commons.xml.saxbp.annotations.SAXBPHandler;
 public class JAXBContactListHandler {
 
     private final Collection<ContactList> contactLists = new LinkedList<ContactList>();
-    private final Collection<PersonType>  people       = new LinkedList<PersonType>();
 
     @JAXBHandler(@XmlElement(namespace = "http://nerds.antelax.xmlns/rolodex", name = "contacts"))
     public void contactList(final JAXBElement<ContactList> element) {
         contactLists.add(element.getValue());
     }
 
-    @JAXBHandler(@XmlElement(namespace = "http://nerds.antelax.xmlns/rolodex", name = "contact"))
-    public void person(final JAXBElement<PersonType> element) {
-        people.add(element.getValue());
-    }
-
     public Collection<ContactList> getContactLists() {
         return Collections.unmodifiableCollection(contactLists);
     }
 
-    public Collection<PersonType> getPeople() {
-        return Collections.unmodifiableCollection(people);
-    }
-
     public void reset() {
         contactLists.clear();
-        people.clear();
     }
 
 }
