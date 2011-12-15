@@ -27,11 +27,7 @@ import nerds.antelax.commons.xml.jaxbtest.rolodex.ContactList;
 public class XMLTestBase {
 
     public InputStream rolodexXml() {
-        return xmlStream("rolodex.xml");
-    }
-
-    public InputStream xmlStream(final String filename) {
-        return XMLTestBase.class.getResourceAsStream("/xml/" + filename);
+        return XMLTestBase.class.getResourceAsStream("/rolodex.xml");
     }
 
     protected static JAXBContext rolodexContext() throws JAXBException {
