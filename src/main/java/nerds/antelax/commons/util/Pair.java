@@ -21,7 +21,7 @@ import com.google.common.base.Preconditions;
 
 /**
  * Modeled after C++'s STL std::pair. Safe to use in collections insofar as the constituent types are.
- *
+ * 
  * @param <T1>
  *            the first object type in the pair
  * @param <T2>
@@ -34,14 +34,14 @@ public class Pair<T1, T2> {
     private final T2 second;
 
     public Pair(final T1 first, final T2 second) {
-    	Preconditions.checkArgument(first != null);
-    	Preconditions.checkArgument(second != null);
+        Preconditions.checkNotNull(first);
+        Preconditions.checkNotNull(second);
         this.first = first;
         this.second = second;
     }
 
     public Pair(final Pair<T1, T2> pair) {
-        Preconditions.checkArgument(pair != null);
+        Preconditions.checkNotNull(pair);
         first = pair.first();
         second = pair.second();
     }

@@ -41,7 +41,6 @@ import nerds.antelax.commons.util.Pair;
 import nerds.antelax.commons.xml.saxbp.annotations.JAXBHandler;
 import nerds.antelax.commons.xml.saxbp.annotations.SAXBPHandler;
 
-
 import com.google.common.base.Preconditions;
 
 /**
@@ -75,11 +74,10 @@ final class ParseInterest implements EventFilter {
     @Override
     public boolean accept(final XMLEvent event) {
         Preconditions.checkNotNull(event);
-        if (jaxbClass != null) {
+        if (isJAXB())
             return event.isStartElement() && event.asStartElement().getName().equals(qName);
-        } else {
+        else
             return handlerMethod.getParameterTypes()[0].isAssignableFrom(event.getClass());
-        }
     }
 
     QName qName() {
@@ -96,9 +94,19 @@ final class ParseInterest implements EventFilter {
      * @throws JAXBException
      * @throws XMLStreamException
      */
-    void handleNextEvent(final XMLEventReader reader) throws JAXBException, XMLStreamException {
+    Object parseJAXBObject(final XMLEventReader reader) throws JAXBException {
         Preconditions.checkNotNull(reader);
-        final Object event = jaxbClass != null ? jaxbUnmarshaller.unmarshal(reader, jaxbClass) : reader.nextEvent();
+        Preconditions.checkArgument(isJAXB());
+        return jaxbUnmarshaller.unmarshal(reader, jaxbClass);
+    }
+
+    /**
+     * Should be called only when the next event in the stream (either a Stax or JAXB event) is the event we are interested in.
+     * 
+     * @throws JAXBException
+     */
+    void handleEvent(final Object event) throws JAXBException {
+        Preconditions.checkNotNull(event);
         try {
             handlerMethod.invoke(handler, event);
         } catch (final IllegalArgumentException iare) {
