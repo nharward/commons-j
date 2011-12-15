@@ -40,16 +40,18 @@ public class SAXBPParserTest extends XMLTestBase {
     public final void basicJAXBParse() throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
         final JAXBContactListHandler handler = new JAXBContactListHandler();
         assertTrue(handler.getContactLists().isEmpty());
-        new SAXBPParser().parse(rolodexXml(), rolodexContext(), handler);
-        assertEquals(1, handler.getContactLists().size());
+        // Pass the handler in three times, so our counts should be triple the normal value
+        new SAXBPParser().parse(rolodexXml(), rolodexContext(), handler, handler, handler);
+        assertEquals(3, handler.getContactLists().size());
     }
 
     @Test
     public final void basicStAXParse() throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
         final StAXContactListHandler handler = new StAXContactListHandler();
         assertTrue(handler.getContactListEvents().isEmpty());
-        new SAXBPParser().parse(rolodexXml(), null, handler);
-        assertEquals(1, handler.getContactListEvents().size());
+        // Pass the handler in four times, so our counts should be quadruple the normal value
+        new SAXBPParser().parse(rolodexXml(), null, handler, handler, handler, handler);
+        assertEquals(4, handler.getContactListEvents().size());
     }
 
     @Test
@@ -65,13 +67,14 @@ public class SAXBPParserTest extends XMLTestBase {
         assertFalse(dHandler.started());
         assertFalse(dHandler.ended());
 
-        new SAXBPParser().parse(rolodexXml(), rolodexContext(), clHandler, pHandler, atHandler, dHandler);
+        // Pass several handlers in multiple times
+        new SAXBPParser().parse(rolodexXml(), rolodexContext(), clHandler, clHandler, pHandler, pHandler, pHandler, atHandler,
+                atHandler, atHandler, dHandler, dHandler, dHandler, dHandler);
 
-        assertEquals(1, clHandler.getContactListEvents().size());
-        assertEquals(2, pHandler.getPeople().size());
-        assertEquals(4, atHandler.getAddresses().size());
+        assertEquals(2, clHandler.getContactListEvents().size());
+        assertEquals(6, pHandler.getPeople().size());
+        assertEquals(12, atHandler.getAddresses().size());
         assertTrue(dHandler.started());
         assertTrue(dHandler.ended());
     }
-
 }
