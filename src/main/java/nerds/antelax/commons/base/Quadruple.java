@@ -15,39 +15,26 @@
 // You should have received a copy of the GNU General Public License
 // along with ndh-commons. If not, see <http://www.gnu.org/licenses/>.
 
-package nerds.antelax.commons.util;
+package nerds.antelax.commons.base;
 
-import com.google.common.base.Preconditions;
+import static nerds.antelax.commons.base.Equals.allowNull;
 
 /**
- * Modeled after C++'s STL std::pair. Safe to use in collections insofar as the constituent types are.
- * 
- * @param <T1>
- *            the first object type in the pair
- * @param <T2>
- *            the second object type in the pair
- * @see <a href="http://www.cplusplus.com/reference/std/utility/pair/">std::pair</a>
+ * A 4-tuple, when returning 4 values is more convenient than creating a special class. Null values are allowed for any/all
+ * positions of the tuple.
  */
-public class Pair<T1, T2> {
+public class Quadruple<T1, T2, T3, T4> {
 
     private final T1 first;
     private final T2 second;
+    private final T3 third;
+    private final T4 fourth;
 
-    public Pair(final T1 first, final T2 second) {
-        Preconditions.checkNotNull(first);
-        Preconditions.checkNotNull(second);
+    public Quadruple(final T1 first, final T2 second, final T3 third, final T4 fourth) {
         this.first = first;
         this.second = second;
-    }
-
-    public Pair(final Pair<T1, T2> pair) {
-        Preconditions.checkNotNull(pair);
-        first = pair.first();
-        second = pair.second();
-    }
-
-    public static <U, V> Pair<U, V> make_pair(final U first, final V second) {
-        return new Pair<U, V>(first, second);
+        this.third = third;
+        this.fourth = fourth;
     }
 
     public T1 first() {
@@ -58,22 +45,33 @@ public class Pair<T1, T2> {
         return second;
     }
 
+    public T3 third() {
+        return third;
+    }
+
+    public T4 fourth() {
+        return fourth;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj instanceof Quadruple<?, ?, ?, ?>) {
+            final Quadruple<?, ?, ?, ?> other = (Quadruple<?, ?, ?, ?>) obj;
+            return allowNull(first(), other.first()) && allowNull(second(), other.second()) && allowNull(third(), other.third())
+                    && allowNull(fourth(), other.fourth());
+        }
+        return false;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((first == null) ? 0 : first.hashCode());
         result = prime * result + ((second == null) ? 0 : second.hashCode());
+        result = prime * result + ((third == null) ? 0 : third.hashCode());
+        result = prime * result + ((fourth == null) ? 0 : fourth.hashCode());
         return result;
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj instanceof Pair<?, ?>) {
-            final Pair<?, ?> other = (Pair<?, ?>) obj;
-            return first.equals(other.first()) && second.equals(other.second());
-        }
-        return false;
     }
 
 }

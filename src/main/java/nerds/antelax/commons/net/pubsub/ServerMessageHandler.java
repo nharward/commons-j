@@ -17,7 +17,7 @@
 
 package nerds.antelax.commons.net.pubsub;
 
-import static nerds.antelax.commons.util.Conversions.asArray;
+import static nerds.antelax.commons.base.Conversions.asArray;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;

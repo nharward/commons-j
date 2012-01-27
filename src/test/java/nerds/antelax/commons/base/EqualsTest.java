@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with ndh-commons. If not, see <http://www.gnu.org/licenses/>.
 
-package nerds.antelax.commons.util;
+package nerds.antelax.commons.base;
 
-import static nerds.antelax.commons.util.Equals.allowNull;
-import static nerds.antelax.commons.util.Equals.disallowNull;
+import static nerds.antelax.commons.base.Equals.allowNull;
+import static nerds.antelax.commons.base.Equals.disallowNull;
 import static org.testng.AssertJUnit.assertFalse;
 import static org.testng.AssertJUnit.assertTrue;
 
