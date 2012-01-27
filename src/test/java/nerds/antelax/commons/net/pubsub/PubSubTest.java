@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import nerds.antelax.commons.base.Conversions;
 import nerds.antelax.commons.net.NetUtil;
-import nerds.antelax.commons.util.Conversions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

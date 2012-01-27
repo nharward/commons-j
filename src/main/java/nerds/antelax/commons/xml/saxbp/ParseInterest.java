@@ -37,7 +37,7 @@ import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 
-import nerds.antelax.commons.util.Pair;
+import nerds.antelax.commons.base.Pair;
 import nerds.antelax.commons.xml.saxbp.annotations.JAXBHandler;
 import nerds.antelax.commons.xml.saxbp.annotations.SAXBPHandler;
 

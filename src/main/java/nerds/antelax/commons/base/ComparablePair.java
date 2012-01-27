@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with ndh-commons. If not, see <http://www.gnu.org/licenses/>.
 
-package nerds.antelax.commons.util;
+package nerds.antelax.commons.base;
 
 /**
  * Same as {@link Pair} but with both members {@link Comparable} as well. Obeys the comparison contract described here:

@@ -15,26 +15,30 @@
 // You should have received a copy of the GNU General Public License
 // along with ndh-commons. If not, see <http://www.gnu.org/licenses/>.
 
-package nerds.antelax.commons.util;
+package nerds.antelax.commons.base;
 
-import static nerds.antelax.commons.util.Equals.allowNull;
+import static nerds.antelax.commons.base.Equals.allowNull;
 
 /**
- * A 4-tuple, when returning 4 values is more convenient than creating a special class. Null values are allowed for any/all
+ * A 3-tuple, when returning 3 values is more convenient than creating a special class. Null values are allowed for any/all
  * positions of the tuple.
  */
-public class Quadruple<T1, T2, T3, T4> {
+public class Triple<T1, T2, T3> {
 
     private final T1 first;
     private final T2 second;
     private final T3 third;
-    private final T4 fourth;
 
-    public Quadruple(final T1 first, final T2 second, final T3 third, final T4 fourth) {
+    public Triple(final T1 first, final T2 second, final T3 third) {
         this.first = first;
         this.second = second;
         this.third = third;
-        this.fourth = fourth;
+    }
+
+    public Triple(final Triple<T1, T2, T3> triple) {
+        first = triple.first;
+        second = triple.second;
+        third = triple.third;
     }
 
     public T1 first() {
@@ -49,20 +53,6 @@ public class Quadruple<T1, T2, T3, T4> {
         return third;
     }
 
-    public T4 fourth() {
-        return fourth;
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj instanceof Quadruple<?, ?, ?, ?>) {
-            final Quadruple<?, ?, ?, ?> other = (Quadruple<?, ?, ?, ?>) obj;
-            return allowNull(first(), other.first()) && allowNull(second(), other.second()) && allowNull(third(), other.third())
-                    && allowNull(fourth(), other.fourth());
-        }
-        return false;
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -70,8 +60,16 @@ public class Quadruple<T1, T2, T3, T4> {
         result = prime * result + ((first == null) ? 0 : first.hashCode());
         result = prime * result + ((second == null) ? 0 : second.hashCode());
         result = prime * result + ((third == null) ? 0 : third.hashCode());
-        result = prime * result + ((fourth == null) ? 0 : fourth.hashCode());
         return result;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj instanceof Triple<?, ?, ?>) {
+            final Triple<?, ?, ?> other = (Triple<?, ?, ?>) obj;
+            return allowNull(first(), other.first()) && allowNull(second(), other.second()) && allowNull(third(), other.third());
+        }
+        return false;
     }
 
 }

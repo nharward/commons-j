@@ -15,30 +15,39 @@
 // You should have received a copy of the GNU General Public License
 // along with ndh-commons. If not, see <http://www.gnu.org/licenses/>.
 
-package nerds.antelax.commons.util;
+package nerds.antelax.commons.base;
 
-import static nerds.antelax.commons.util.Equals.allowNull;
+import com.google.common.base.Preconditions;
 
 /**
- * A 3-tuple, when returning 3 values is more convenient than creating a special class. Null values are allowed for any/all
- * positions of the tuple.
+ * Modeled after C++'s STL std::pair. Safe to use in collections insofar as the constituent types are.
+ * 
+ * @param <T1>
+ *            the first object type in the pair
+ * @param <T2>
+ *            the second object type in the pair
+ * @see <a href="http://www.cplusplus.com/reference/std/utility/pair/">std::pair</a>
  */
-public class Triple<T1, T2, T3> {
+public class Pair<T1, T2> {
 
     private final T1 first;
     private final T2 second;
-    private final T3 third;
 
-    public Triple(final T1 first, final T2 second, final T3 third) {
+    public Pair(final T1 first, final T2 second) {
+        Preconditions.checkNotNull(first);
+        Preconditions.checkNotNull(second);
         this.first = first;
         this.second = second;
-        this.third = third;
     }
 
-    public Triple(final Triple<T1, T2, T3> triple) {
-        first = triple.first;
-        second = triple.second;
-        third = triple.third;
+    public Pair(final Pair<T1, T2> pair) {
+        Preconditions.checkNotNull(pair);
+        first = pair.first();
+        second = pair.second();
+    }
+
+    public static <U, V> Pair<U, V> make_pair(final U first, final V second) {
+        return new Pair<U, V>(first, second);
     }
 
     public T1 first() {
@@ -49,25 +58,20 @@ public class Triple<T1, T2, T3> {
         return second;
     }
 
-    public T3 third() {
-        return third;
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((first == null) ? 0 : first.hashCode());
         result = prime * result + ((second == null) ? 0 : second.hashCode());
-        result = prime * result + ((third == null) ? 0 : third.hashCode());
         return result;
     }
 
     @Override
     public boolean equals(final Object obj) {
-        if (obj instanceof Triple<?, ?, ?>) {
-            final Triple<?, ?, ?> other = (Triple<?, ?, ?>) obj;
-            return allowNull(first(), other.first()) && allowNull(second(), other.second()) && allowNull(third(), other.third());
+        if (obj instanceof Pair<?, ?>) {
+            final Pair<?, ?> other = (Pair<?, ?>) obj;
+            return first.equals(other.first()) && second.equals(other.second());
         }
         return false;
     }
