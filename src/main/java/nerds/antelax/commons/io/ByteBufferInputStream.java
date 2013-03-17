@@ -14,6 +14,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with commons-j. If not, see <http://www.gnu.org/licenses/>.
+
 package nerds.antelax.commons.io;
 
 import java.io.IOException;
