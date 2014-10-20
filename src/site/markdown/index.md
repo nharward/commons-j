@@ -41,7 +41,7 @@ For use with Maven add the following repositories to your pom.xml:
         <repository>
             <id>us.harward.repo.release</id>
             <name>Maven 2 Release Repository for harward.us</name>
-            <url>http://apollo.harward.us/maven2/repo/release</url>
+            <url>http://www.harward.us/maven2/repo/release</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -49,7 +49,7 @@ For use with Maven add the following repositories to your pom.xml:
         <repository>
             <id>us.harward.repo.snapshot</id>
             <name>Maven 2 Snapshot Repository for harward.us</name>
-            <url>http://apollo.harward.us/maven2/repo/snapshot</url>
+            <url>http://www.harward.us/maven2/repo/snapshot</url>
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>interval:5</updatePolicy>
