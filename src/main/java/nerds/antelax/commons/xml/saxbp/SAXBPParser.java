@@ -54,6 +54,17 @@ import com.google.common.base.Preconditions;
  */
 public class SAXBPParser {
 
+    private final XMLInputFactory xmlInputFactory;
+    
+    public SAXBPParser() {
+        xmlInputFactory = XMLInputFactory.newInstance();
+    }
+    
+    public SAXBPParser(XMLInputFactory factory) {
+        if (factory == null) throw new NullPointerException("factory parameter cannot be null");
+        xmlInputFactory = factory;
+    }
+
     /**
      * Wrapper around {@link #parse(XMLEventReader, JAXBContext, Object...)}.
      * 
@@ -63,7 +74,7 @@ public class SAXBPParser {
     public void parse(final InputStream is, final JAXBContext context, final Object... saxbpHandlers) throws XMLStreamException,
             FactoryConfigurationError, JAXBException, SAXBPException {
         Preconditions.checkNotNull(is, "InputStream may not be null");
-        parse(XMLInputFactory.newInstance().createXMLEventReader(is), context, saxbpHandlers);
+        parse(xmlInputFactory.createXMLEventReader(is), context, saxbpHandlers);
     }
 
     /**
@@ -75,7 +86,7 @@ public class SAXBPParser {
     public void parse(final Reader reader, final JAXBContext context, final Object... saxbpHandlers) throws XMLStreamException,
             FactoryConfigurationError, JAXBException, SAXBPException {
         Preconditions.checkNotNull(reader, "Reader may not be null");
-        parse(XMLInputFactory.newInstance().createXMLEventReader(reader), context, saxbpHandlers);
+        parse(xmlInputFactory.createXMLEventReader(reader), context, saxbpHandlers);
     }
 
     /**
@@ -87,7 +98,7 @@ public class SAXBPParser {
     public void parse(final Source source, final JAXBContext context, final Object... saxbpHandlers) throws XMLStreamException,
             FactoryConfigurationError, JAXBException, SAXBPException {
         Preconditions.checkNotNull(source, "Source may not be null");
-        parse(XMLInputFactory.newInstance().createXMLEventReader(source), context, saxbpHandlers);
+        parse(xmlInputFactory.createXMLEventReader(source), context, saxbpHandlers);
     }
 
     /**
@@ -99,7 +110,7 @@ public class SAXBPParser {
     public void parse(final XMLStreamReader reader, final JAXBContext context, final Object... saxbpHandlers)
             throws XMLStreamException, FactoryConfigurationError, JAXBException, SAXBPException {
         Preconditions.checkNotNull(reader, "XMLStreamReader may not be null");
-        parse(XMLInputFactory.newInstance().createXMLEventReader(reader), context, saxbpHandlers);
+        parse(xmlInputFactory.createXMLEventReader(reader), context, saxbpHandlers);
     }
 
     /**
