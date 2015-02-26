@@ -61,7 +61,7 @@ public class SAXBPParser {
     }
     
     public SAXBPParser(XMLInputFactory factory) {
-        if (factory == null) throw new NullPointerException("factory parameter cannot be null");
+        Preconditions.checkNotNull(factory, "Factory may not be null");
         xmlInputFactory = factory;
     }
 
