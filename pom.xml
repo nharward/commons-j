@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>nerds.antelax</groupId>
     <artifactId>commons-j</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
     <name>Commons-J</name>
     <description>Collection of Java 1.6+ utility code I find useful that I didn't find elsewhere.</description>
@@ -269,6 +269,11 @@
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-ssh-external</artifactId>
                 <version>1.0-beta-6</version>
+            </extension>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ftp</artifactId>
+                <version>2.4</version>
             </extension>
         </extensions>
     </build>
