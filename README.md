@@ -1,1 +1,1 @@
-Please see the main documentation [here](src/site/markdown/index.md "commons-j documentation").
+#movetogitlab - this project is now hosted at https://gitlab.com/nharward/commons-j
